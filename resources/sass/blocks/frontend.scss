@@ -225,16 +225,70 @@ body.directorist-gutenberg-listings-archive-grid-view{
 			width: 100%;
 		}
 	}
-	.directorist-gutenberg-block-width-25 {
-		width: calc(25% - 12px);
-		@media only screen and (max-width: 767px) {
-			width: calc(50% - 12px);
+		.directorist-gutenberg-block-width-25 {
+			width: calc(25% - 12px);
+			@media only screen and (max-width: 767px) {
+				width: calc(50% - 12px);
+			}
+			@media only screen and (max-width: 480px) {
+				width: 100%;
+			}
 		}
-		@media only screen and (max-width: 480px) {
-			width: 100%;
+		.directorist-gutenberg-block-width-inline {
+			width: auto;
+			flex: 0 0 auto;
+		}
+
+		@media only screen and (max-width: 781px) {
+			.directorist-gutenberg-block-width-tablet-100 {
+				width: 100% !important;
+			}
+			.directorist-gutenberg-block-width-tablet-75 {
+				width: calc(75% - 12px) !important;
+			}
+			.directorist-gutenberg-block-width-tablet-67 {
+				width: calc(66.67% - 12px) !important;
+			}
+			.directorist-gutenberg-block-width-tablet-50 {
+				width: calc(50% - 12px) !important;
+			}
+			.directorist-gutenberg-block-width-tablet-33 {
+				width: calc(33.33% - 12px) !important;
+			}
+			.directorist-gutenberg-block-width-tablet-25 {
+				width: calc(25% - 12px) !important;
+			}
+			.directorist-gutenberg-block-width-tablet-inline {
+				width: auto !important;
+				flex: 0 0 auto;
+			}
+		}
+
+		@media only screen and (max-width: 600px) {
+			.directorist-gutenberg-block-width-mobile-100 {
+				width: 100% !important;
+			}
+			.directorist-gutenberg-block-width-mobile-75 {
+				width: calc(75% - 12px) !important;
+			}
+			.directorist-gutenberg-block-width-mobile-67 {
+				width: calc(66.67% - 12px) !important;
+			}
+			.directorist-gutenberg-block-width-mobile-50 {
+				width: calc(50% - 12px) !important;
+			}
+			.directorist-gutenberg-block-width-mobile-33 {
+				width: calc(33.33% - 12px) !important;
+			}
+			.directorist-gutenberg-block-width-mobile-25 {
+				width: calc(25% - 12px) !important;
+			}
+			.directorist-gutenberg-block-width-mobile-inline {
+				width: auto !important;
+				flex: 0 0 auto;
+			}
 		}
 	}
-}
 .post-type-directorist_gbt .block-editor-block-list__layout.is-layout-flex{
 	.directorist-gutenberg-listing-card-block{
 		flex: unset;

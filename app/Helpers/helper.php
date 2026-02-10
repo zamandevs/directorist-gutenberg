@@ -220,6 +220,92 @@ function directorist_gutenberg_build_icon_style( array $attributes, string $colo
 }
 
 /**
+ * Normalize supported block width values to class-safe tokens.
+ *
+ * @param mixed  $width    Raw width value.
+ * @param string $fallback Fallback width token.
+ * @return string
+ */
+function directorist_gutenberg_normalize_block_width_value( $width, string $fallback = '100' ): string {
+	$normalized = '';
+
+	if ( $width !== null && $width !== '' ) {
+		$normalized = strtolower( trim( (string) $width ) );
+	}
+
+	$map = [
+		'100'     => '100',
+		'75'      => '75',
+		'67'      => '67',
+		'66.67'   => '67',
+		'66.6667' => '67',
+		'50'      => '50',
+		'33'      => '33',
+		'33.33'   => '33',
+		'33.3333' => '33',
+		'25'      => '25',
+		'inline'  => 'inline',
+	];
+
+	if ( isset( $map[ $normalized ] ) ) {
+		return $map[ $normalized ];
+	}
+
+	if ( $fallback === '' ) {
+		return '';
+	}
+
+	return directorist_gutenberg_normalize_block_width_value( $fallback, '' ) ?: '100';
+}
+
+/**
+ * Resolve responsive block width values from block attributes.
+ *
+ * @param array  $attributes Block attributes array.
+ * @param string $width_key Width attribute key.
+ * @param string $responsive_width_key Responsive width attribute key.
+ * @return array{desktop:string,tablet:string,mobile:string}
+ */
+function directorist_gutenberg_get_responsive_block_width_values(
+	array $attributes,
+	string $width_key = 'block_width',
+	string $responsive_width_key = 'block_width_responsive'
+): array {
+	$desktop_width = directorist_gutenberg_normalize_block_width_value(
+		$attributes[ $width_key ] ?? '',
+		'100'
+	);
+
+	$responsive_widths = [];
+	if ( ! empty( $attributes[ $responsive_width_key ] ) ) {
+		$responsive_widths = $attributes[ $responsive_width_key ];
+		if ( is_string( $responsive_widths ) ) {
+			$decoded_widths = json_decode( $responsive_widths, true );
+			$responsive_widths = is_array( $decoded_widths ) ? $decoded_widths : [];
+		}
+	}
+
+	if ( ! is_array( $responsive_widths ) ) {
+		$responsive_widths = [];
+	}
+
+	return [
+		'desktop' => directorist_gutenberg_normalize_block_width_value(
+			$responsive_widths['desktop'] ?? '',
+			$desktop_width
+		),
+		'tablet' => directorist_gutenberg_normalize_block_width_value(
+			$responsive_widths['tablet'] ?? '',
+			''
+		),
+		'mobile' => directorist_gutenberg_normalize_block_width_value(
+			$responsive_widths['mobile'] ?? '',
+			''
+		),
+	];
+}
+
+/**
  * Get block width class name from block attributes
  *
  * @param array $attributes Block attributes array
@@ -227,8 +313,25 @@ function directorist_gutenberg_build_icon_style( array $attributes, string $colo
  * @return string Block width class name (e.g., 'directorist-gutenberg-block-width-100')
  */
 function directorist_gutenberg_get_block_width_class( array $attributes, string $width_key = 'block_width' ): string {
-	$block_width = ! empty( $attributes[ $width_key ] ) ? $attributes[ $width_key ] : '100';
-	return 'directorist-gutenberg-block-width-' . esc_attr( $block_width );
+	$responsive_width_values = directorist_gutenberg_get_responsive_block_width_values(
+		$attributes,
+		$width_key,
+		$width_key . '_responsive'
+	);
+
+	$class_names = [
+		'directorist-gutenberg-block-width-' . esc_attr( $responsive_width_values['desktop'] ),
+	];
+
+	if ( ! empty( $responsive_width_values['tablet'] ) ) {
+		$class_names[] = 'directorist-gutenberg-block-width-tablet-' . esc_attr( $responsive_width_values['tablet'] );
+	}
+
+	if ( ! empty( $responsive_width_values['mobile'] ) ) {
+		$class_names[] = 'directorist-gutenberg-block-width-mobile-' . esc_attr( $responsive_width_values['mobile'] );
+	}
+
+	return implode( ' ', array_filter( array_unique( $class_names ) ) );
 }
 
 /**
