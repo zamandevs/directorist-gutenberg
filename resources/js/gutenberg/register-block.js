@@ -79,8 +79,14 @@ export default function registerBlock( {
 		'template_context',
 		{}
 	);
+	const isContextualSiteTemplate =
+		templateContext?.surface === 'site_template';
 
-	if ( Array.isArray( templateTypes ) && templateTypes.length > 0 ) {
+	if (
+		! isContextualSiteTemplate &&
+		Array.isArray( templateTypes ) &&
+		templateTypes.length > 0
+	) {
 		const localizedTemplateType =
 			getLocalizedBlockDataByKey( 'template_type', '' ) || '';
 		let effectiveTemplateType = localizedTemplateType;
