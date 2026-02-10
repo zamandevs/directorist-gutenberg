@@ -13,6 +13,8 @@ phpcs-report.xml
 /assets/**/*.hot-update.*
 /assets/**/*.js.map
 /assets/css/*.js
+/assets/build/
+/assets/blocks/
 yarn.lock
 composer.lock
 .DS_Store

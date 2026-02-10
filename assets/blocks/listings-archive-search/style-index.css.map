@@ -1,1 +1,0 @@
-{"version":3,"file":"listings-archive-search/style-index.css","mappings":";;;AACC;EACC;AAAF,C","sources":["webpack://wpmvc/./resources/blocks/listings-archive-search/style.scss"],"sourcesContent":[".wp-block-directorist-gutenberg-listings-archive-search {\n\t.directorist-gutenberg-listings-archive-search-nav {\n\t\tmargin-bottom: 20px;\n\t}\n}"],"names":[],"sourceRoot":""}
