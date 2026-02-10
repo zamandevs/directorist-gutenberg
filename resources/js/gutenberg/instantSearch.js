@@ -6,13 +6,58 @@ jQuery( document ).ready( function ( $ ) {
 		Global Variables
 	*/
 
-	// Globally accessible form_data
-	let form_data = {};
+	const createInstantSearchState = () => ( {
+		form_data: {},
+		scrollingPage: 1,
+		infinitePaginationIsLoading: false,
+		infinitePaginationCompleted: false,
+	} );
 
-	// Scrolling Pagination
-	let scrollingPage = 1;
-	let infinitePaginationIsLoading = false;
-	let infinitePaginationCompleted = false;
+	const instantSearchStateByInstance = new Map();
+
+	function getContextRoot( element ) {
+		const $element = $( element );
+		if ( ! $element.length ) {
+			return $( [] );
+		}
+
+		const contextRoot = $element
+			.first()
+			.closest(
+				'[data-instance-id], .directorist-gutenberg-listings-loop, .directorist-gutenberg-listings-archive, .directorist-contents-wrap'
+			);
+
+		return contextRoot.length ? contextRoot : $( [] );
+	}
+
+	function getInstanceKey( element ) {
+		const contextRoot = getContextRoot( element );
+		if ( contextRoot.length ) {
+			const instanceId = contextRoot.attr( 'data-instance-id' );
+			if ( instanceId ) {
+				return instanceId;
+			}
+		}
+
+		const atts = getDataAtts( element );
+		if ( atts && atts.instance_id ) {
+			return String( atts.instance_id );
+		}
+
+		return '__global__';
+	}
+
+	function getState( element ) {
+		const instanceKey = getInstanceKey( element );
+		if ( ! instantSearchStateByInstance.has( instanceKey ) ) {
+			instantSearchStateByInstance.set(
+				instanceKey,
+				createInstantSearchState()
+			);
+		}
+
+		return instantSearchStateByInstance.get( instanceKey );
+	}
 
 	/**
 		Main Functions
@@ -20,8 +65,11 @@ jQuery( document ).ready( function ( $ ) {
 
 	// Perform Instant Search
 	function performInstantSearch( searchElement ) {
+		const state = getState( searchElement );
+		const contextRoot = getContextRoot( searchElement );
+		const scopedRoot = contextRoot.length ? contextRoot : $( document );
 		// Get archive container - works for both old and new structure
-		const archiveContainer = getArchiveContainer();
+		const archiveContainer = getArchiveContainer( searchElement );
 
 		// Instant Search Data
 		const instant_search_data = prepareInstantSearchData( searchElement );
@@ -32,17 +80,20 @@ jQuery( document ).ready( function ( $ ) {
 			data: instant_search_data,
 			beforeSend: function () {
 				// Disable buttons in advanced filter form
-				$(
-					'.directorist-advanced-filter__form .directorist-btn-sm'
-				).attr( 'disabled', true );
+				scopedRoot
+					.find( '.directorist-advanced-filter__form .directorist-btn-sm' )
+					.attr( 'disabled', true );
 
 				// Add fade class to archive items
-				$(
-					'.directorist-archive-items, .directorist-gutenberg-listings-archive-contents'
-				).addClass( 'atbdp-form-fade' );
+				scopedRoot
+					.find(
+						'.directorist-archive-items, .directorist-gutenberg-listings-archive-contents'
+					)
+					.addClass( 'atbdp-form-fade' );
 
 				// Hide advanced filter
-				$( '.directorist-header-bar .directorist-advanced-filter' )
+				scopedRoot
+					.find( '.directorist-header-bar .directorist-advanced-filter' )
 					.removeClass( 'directorist-advanced-filter--show' )
 					.hide();
 
@@ -59,30 +110,33 @@ jQuery( document ).ready( function ( $ ) {
 			success: function ( html ) {
 				if ( html.search_result ) {
 					// Remove existing header titles
-					$(
-						'.directorist-header-found-title, .dsa-save-search-container'
-					).remove();
+					scopedRoot
+						.find(
+							'.directorist-header-found-title, .dsa-save-search-container'
+						)
+						.remove();
 
 					if ( html.header_title ) {
-						$( '.directorist-listings-header__left' ).append(
-							html.header_title
-						);
-						$( '.directorist-header-found-title span' ).text(
-							html.count
-						);
+						scopedRoot
+							.find( '.directorist-listings-header__left' )
+							.append( html.header_title );
+						scopedRoot
+							.find( '.directorist-header-found-title span' )
+							.text( html.count );
 					}
 
 					// Replace archive items
-					$(
-						'.directorist-archive-items, .directorist-gutenberg-listings-archive-contents'
-					)
+					scopedRoot
+						.find(
+							'.directorist-archive-items, .directorist-gutenberg-listings-archive-contents'
+						)
 						.replaceWith( html.search_result )
 						.removeClass( 'atbdp-form-fade' );
 
 					// Re-enable buttons
-					$(
-						'.directorist-advanced-filter__form .directorist-btn-sm'
-					).attr( 'disabled', false );
+					scopedRoot
+						.find( '.directorist-advanced-filter__form .directorist-btn-sm' )
+						.attr( 'disabled', false );
 
 					window.dispatchEvent(
 						new CustomEvent( 'directorist-instant-search-reloaded' )
@@ -101,19 +155,19 @@ jQuery( document ).ready( function ( $ ) {
 						new_meta_title +=
 							( new_meta_title ? ' within ' : '' ) +
 							html.location_name;
-					if ( form_data.address )
+					if ( state.form_data.address )
 						new_meta_title +=
-							( form_data.in_cat || form_data.in_loc
+							( state.form_data.in_cat || state.form_data.in_loc
 								? ' near '
-								: '' ) + form_data.address;
+								: '' ) + state.form_data.address;
 					document.title = new_meta_title
 						? `${ new_meta_title } | ${ directorist.site_name }`
 						: directorist.site_name;
 				}
 
 				// Initialize scrolling status
-				scrollingPage = 1;
-				infinitePaginationCompleted = false;
+				state.scrollingPage = 1;
+				state.infinitePaginationCompleted = false;
 			},
 		} );
 	}
@@ -121,18 +175,22 @@ jQuery( document ).ready( function ( $ ) {
 	// Perform Instant Search for directory type change
 	function onDirectoryChange( searchElement ) {
 		// Get archive container - get fresh reference each time
-		const mainContainer = getMainContainer();
+		const mainContainer = getMainContainer( searchElement );
 
 		if ( ! mainContainer.length ) {
 			return;
 		}
 
-		const mainContainerElm = mainContainer[0];
-		const mainContainerWrap = mainContainerElm.querySelector( '.directorist-gutenberg-listings-archive-wrap' );
+		const mainContainerElm = mainContainer[ 0 ];
+		const mainContainerWrap = mainContainerElm.querySelector(
+			'.directorist-gutenberg-listings-archive-wrap'
+		);
 
 		if ( ! mainContainerWrap ) {
 			return;
 		}
+
+		const state = getState( searchElement );
 
 		// Instant Search Data
 		const instant_search_data = prepareInstantSearchData( searchElement );
@@ -148,35 +206,44 @@ jQuery( document ).ready( function ( $ ) {
 			success: function ( html ) {
 				// Handle both response types: directory_type and search_result
 				const responseHtml = html.directory_type || html.search_result;
-				
+
 				if ( ! responseHtml ) {
 					mainContainer.removeClass( 'atbdp-form-fade' );
 					return;
 				}
 
-				mainContainer[0].innerHTML = responseHtml;
+				mainContainer[ 0 ].innerHTML = responseHtml;
 
 				// Remove fade class from all archive containers
 				mainContainer.removeClass( 'atbdp-form-fade' );
 
-				window.dispatchEvent( new CustomEvent( 'directorist-instant-search-reloaded' ) );
-				window.dispatchEvent( new CustomEvent( 'directorist-reload-listings-map-archive' ) );
+				window.dispatchEvent(
+					new CustomEvent( 'directorist-instant-search-reloaded' )
+				);
+				window.dispatchEvent(
+					new CustomEvent( 'directorist-reload-listings-map-archive' )
+				);
 
 				// Initialize scrolling status
-				scrollingPage = 1;
-				infinitePaginationCompleted = false;
+				state.scrollingPage = 1;
+				state.infinitePaginationCompleted = false;
 			},
-			error: function( xhr, status, error ) {
+			error: function () {
 				// Get fresh reference on error
 				mainContainer.removeClass( 'atbdp-form-fade' );
-			}
+			},
 		} );
 	}
 
 	// Update filters for a specific directory type
-	function updateFiltersForDirectoryType( directoryType ) {
+	function updateFiltersForDirectoryType( directoryType, searchElement ) {
+		const contextRoot = getContextRoot( searchElement );
+		const scopedRoot = contextRoot.length ? contextRoot : $( document );
+
 		// Find the filters block
-		const filtersBlock = $( '.directorist-gutenberg-listings-archive-filters[data-atts]' ).first();
+		const filtersBlock = scopedRoot
+			.find( '.directorist-gutenberg-listings-archive-filters[data-atts]' )
+			.first();
 
 		if ( !filtersBlock.length ) {
 			return;
@@ -327,11 +394,11 @@ jQuery( document ).ready( function ( $ ) {
 
 						// Re-initialize any form-related plugins (select2, etc.)
 						if ( typeof jQuery !== 'undefined' && jQuery.fn.select2 ) {
-							$( '.directorist-advanced-filter select' ).each( function() {
+							scopedRoot.find( '.directorist-advanced-filter select' ).each( function() {
 								if ( $( this ).data( 'select2' ) ) {
 									$( this ).select2( 'destroy' );
 								}
-						} );
+							} );
 					}
 				}, 150 );
 
@@ -354,10 +421,13 @@ jQuery( document ).ready( function ( $ ) {
 
 	// AJAX call to load more listings
 	function loadMoreListings( searchElement ) {
+		const state = getState( searchElement );
+		const contextRoot = getContextRoot( searchElement );
 		let loadingDiv;
-		const container = $(
-			'.directorist-infinite-scroll .directorist-container-fluid .directorist-row'
-		);
+		const scopedRoot = contextRoot.length ? contextRoot : $( document );
+		const container = scopedRoot
+			.find( '.directorist-infinite-scroll .directorist-container-fluid .directorist-row' )
+			.first();
 
 		// Instant Search Data
 		const preparedData = prepareInstantSearchData( searchElement );
@@ -365,7 +435,7 @@ jQuery( document ).ready( function ( $ ) {
 		// make ajax data
 		const instant_search_data = {
 			...preparedData,
-			paged: scrollingPage,
+			paged: state.scrollingPage,
 		};
 
 		$.ajax( {
@@ -499,13 +569,13 @@ jQuery( document ).ready( function ( $ ) {
 						}
 					}, 50 );
 				} else {
-					infinitePaginationCompleted = true;
+					state.infinitePaginationCompleted = true;
 				}
 
 				triggerCustomEvents();
 			},
 			complete: function () {
-				infinitePaginationIsLoading = false;
+				state.infinitePaginationIsLoading = false;
 				if ( loadingDiv ) loadingDiv.remove();
 			},
 		} );
@@ -516,9 +586,11 @@ jQuery( document ).ready( function ( $ ) {
   	**/
 
 	// Find related Gutenberg block by searching for blocks with data-atts
-	function findRelatedBlock( selector ) {
-		// Try to find in document - works for both old and new structure
-		const block = $( selector ).first();
+	function findRelatedBlock( selector, element ) {
+		const contextRoot = getContextRoot( element );
+		const scopedRoot = contextRoot.length ? contextRoot : $( document );
+		// Try to find in scoped context first
+		const block = scopedRoot.find( selector ).first();
 		if ( block.length ) {
 			return block;
 		}
@@ -526,28 +598,38 @@ jQuery( document ).ready( function ( $ ) {
 		return $( '[data-atts]' ).first();
 	}
 
-	function getMainContainer() {
-		return $( '.directorist-gutenberg-listings-archive' ).first();	
+	function getMainContainer( searchElement ) {
+		const contextRoot = getContextRoot( searchElement );
+		const scopedRoot = contextRoot.length ? contextRoot : $( document );
+
+		return scopedRoot
+			.find( '.directorist-gutenberg-listings-archive' )
+			.first();
 	}
 
 	// Get the archive container (listings block) - works for both structures
-	function getArchiveContainer() {
-		const container = $(
-			'.directorist-gutenberg-listings-archive'
-		).first();
-		
+	function getArchiveContainer( searchElement ) {
+		const contextRoot = getContextRoot( searchElement );
+		const scopedRoot = contextRoot.length ? contextRoot : $( document );
+
+		let container = scopedRoot
+			.find( '.directorist-gutenberg-listings-archive' )
+			.first();
+
 		if ( ! container.length ) {
 			// Fallback: find any archive container with data-atts
-			container = $(
-				'.directorist-archive-items, .directorist-gutenberg-listings-archive-contents'
-			)
+			container = scopedRoot
+				.find(
+					'.directorist-archive-items, .directorist-gutenberg-listings-archive-contents'
+				)
 				.closest( '[data-atts]' )
 				.first();
 		}
 
 		if ( ! container.length ) {
 			// Final fallback: find archive items container
-			container = $( '.directorist-archive-items' )
+			container = scopedRoot
+				.find( '.directorist-archive-items' )
 				.closest( '[data-atts]' )
 				.first();
 		}
@@ -558,27 +640,63 @@ jQuery( document ).ready( function ( $ ) {
 	// Get data-atts from any related block
 	function getDataAtts( element ) {
 		// Try to find data-atts in the element or its closest block
-		let $el = $( element );
+		const $el = $( element );
 		let atts =
 			$el.data( 'atts' ) || $el.closest( '[data-atts]' ).data( 'atts' );
 
 		// If still not found, try finding any related block
 		if ( ! atts ) {
-			const relatedBlock = findRelatedBlock( '[data-atts]' );
+			const relatedBlock = findRelatedBlock( '[data-atts]', element );
 			atts = relatedBlock.data( 'atts' );
 		}
 
 		return atts;
 	}
 
+	// Build a unified form scope for the current loop instance/context.
+	function getSearchScope( searchElm ) {
+		const $searchElm = $( searchElm );
+		const contextRoot = getContextRoot( searchElm );
+		const scopedRoot = contextRoot.length ? contextRoot : $( document );
+
+		const basicForm = scopedRoot
+			.find( '.directorist-basic-search, .directorist-search-form' )
+			.first();
+		const advancedForm = scopedRoot
+			.find(
+				'.directorist-advanced-search, .directorist-advanced-filter__form'
+			)
+			.first();
+
+		if ( basicForm.length && advancedForm.length ) {
+			return basicForm.add( advancedForm );
+		}
+
+		if ( basicForm.length ) {
+			return basicForm;
+		}
+
+		if ( advancedForm.length ) {
+			return advancedForm;
+		}
+
+		if ( $searchElm.is( 'form' ) ) {
+			return $searchElm.first();
+		}
+
+		const closestForm = $searchElm.closest( 'form' );
+		return closestForm.length ? closestForm : $searchElm;
+	}
+
 	// Prepare Instant Search Data
 	function prepareInstantSearchData( searchElm ) {
+		const state = getState( searchElm );
 		// Get data-atts from the element or related blocks
 		const instant_search_atts = getDataAtts( searchElm );
 
 		// Make ajax data - ensure form_data is properly included
 		const instant_search_data = {
-			...form_data,
+			...state.form_data,
 			action: 'directorist_instant_search',
 			_nonce: directorist.ajax_nonce,
 			current_page_id: directorist.current_page_id,
@@ -594,7 +712,8 @@ jQuery( document ).ready( function ( $ ) {
 	}
 
 	// Update or retain existing keys in form_data
-	function updateFormData( newData ) {
+	function updateFormData( searchElm, newData ) {
+		const state = getState( searchElm );
 		Object.entries( newData ).forEach( ( [ key, value ] ) => {
 			if (
 				value === undefined ||
@@ -605,17 +724,18 @@ jQuery( document ).ready( function ( $ ) {
 					! Array.isArray( value ) &&
 					Object.keys( value ).length === 0 )
 			) {
-				delete form_data[ key ];
+				delete state.form_data[ key ];
 			} else {
-				form_data[ key ] = value;
+				state.form_data[ key ] = value;
 			}
 		} );
 	}
 
 	// Reset form_data
-	function resetFormData() {
-		Object.entries( form_data ).forEach( ( [ key, value ] ) => {
-			delete form_data[ key ];
+	function resetFormData( searchElm ) {
+		const state = getState( searchElm );
+		Object.entries( state.form_data ).forEach( ( [ key ] ) => {
+			delete state.form_data[ key ];
 		} );
 	}
 
@@ -726,16 +846,7 @@ jQuery( document ).ready( function ( $ ) {
 	// Check required fields are valid or not
 	// Checks across all related forms (basic search + advanced filter)
 	function checkRequiredFields( searchElm ) {
-		// Find all related forms - search in basic and advanced search forms
-		const basicForm = $( '.directorist-basic-search' ).first();
-		const advancedForm = $( '.directorist-advanced-search' ).first();
-
-		// Combine all forms if they exist, otherwise use the passed searchElm
-		const allForms = [];
-		if ( basicForm.length ) allForms.push( basicForm );
-		if ( advancedForm.length ) allForms.push( advancedForm );
-
-		const searchScope = allForms.length > 0 ? $( allForms ) : searchElm;
+		const searchScope = getSearchScope( searchElm );
 
 		// Select all required inputs and selects inside searchScope
 		const requiredInputs = searchScope.find(
@@ -782,24 +893,12 @@ jQuery( document ).ready( function ( $ ) {
 	//  Build form_data from searchElm inputs.
 	// Collects from all related forms (basic search + advanced filter)
 	function buildFormData( searchElm ) {
-		// Find all related forms - search in basic and advanced search forms
-		// Always search in both forms to collect all data
-		const basicForm = $( '.directorist-basic-search' ).first();
-		const advancedForm = $( '.directorist-advanced-search' ).first();
-
-		// Collect from the form that triggered the event first, then check other forms
-		// This ensures we get the most up-to-date value from the triggering form
-		let searchScope = searchElm;
-
-		// If we have multiple forms, combine them for comprehensive data collection
-		if ( basicForm.length && advancedForm.length ) {
-			// Combine both forms
-			searchScope = basicForm.add( advancedForm );
-		} else if ( basicForm.length ) {
-			searchScope = basicForm;
-		} else if ( advancedForm.length ) {
-			searchScope = advancedForm;
-		}
+		const state = getState( searchElm );
+		const $searchElm = $( searchElm );
+		const searchScope = getSearchScope( searchElm );
+		const primaryForm = $searchElm.is( 'form' )
+			? $searchElm.first()
+			: $searchElm.closest( 'form' );
 
 		let tag = [];
 		let price = [];
@@ -893,13 +992,10 @@ jQuery( document ).ready( function ( $ ) {
 
 		// Collect basic form values - search across all forms
 		// For query, prioritize getting from the triggering form, then search all forms
-		let q = searchElm.find( 'input[name="q"]' ).val();
+		let q = primaryForm.find( 'input[name="q"]' ).val();
 		// jQuery .val() returns empty string if input is empty, so check for empty string
 		if ( ! q || q === '' ) {
-			q = basicForm.find( 'input[name="q"]' ).val();
-		}
-		if ( ! q || q === '' ) {
-			q = searchScope.find( 'input[name="q"]' ).val();
+			q = searchScope.find( 'input[name="q"]' ).first().val();
 		}
 		// Normalize empty string to undefined so it gets deleted from form_data
 		if ( ! q || q === '' ) {
@@ -917,16 +1013,16 @@ jQuery( document ).ready( function ( $ ) {
 		const website = searchScope.find( 'input[name="website"]' ).val();
 		const phone = searchScope.find( 'input[name="phone"]' ).val();
 		const phone2 = searchScope.find( 'input[name="phone2"]' ).val();
-		const view = form_data.view;
-		const paged = form_data.paged;
+		const view = state.form_data.view;
+		const paged = state.form_data.paged;
 
-		// Get directory type - look in all forms to ensure it's found regardless of form
+		// Get directory type - prioritize triggering form, then fallback to scoped forms
 		const directory_type =
-			searchScope.find( 'input[name="directory_type"]' ).val() ||
-			$( 'input[name="directory_type"]' ).first().val();
+			primaryForm.find( 'input[name="directory_type"]' ).val() ||
+			searchScope.find( 'input[name="directory_type"]' ).first().val();
 
 		// Update form_data
-		updateFormData( {
+		updateFormData( searchElm, {
 			q,
 			in_cat,
 			in_loc,
@@ -954,7 +1050,7 @@ jQuery( document ).ready( function ( $ ) {
 			.is( ':checked' )
 			? searchScope.find( 'input[name="open_now"]' ).val()
 			: undefined;
-		updateFormData( { open_now: open_now_val } );
+		updateFormData( searchElm, { open_now: open_now_val } );
 
 		const radius_search_based_on = searchScope
 			.find( '.directorist-radius_search_based_on' )
@@ -962,19 +1058,19 @@ jQuery( document ).ready( function ( $ ) {
 
 		// Check if the address or zip code is present to update miles, lat, and lng
 		if ( radius_search_based_on === 'address' && address ) {
-			updateFormData( {
+			updateFormData( searchElm, {
 				cityLat: searchScope.find( '#cityLat' ).val(),
 				cityLng: searchScope.find( '#cityLng' ).val(),
 				miles: searchScope.find( 'input[name="miles"]' ).val(),
 			} );
 		} else if ( radius_search_based_on === 'zip' && zip ) {
-			updateFormData( {
+			updateFormData( searchElm, {
 				zip_cityLat: searchScope.find( '.zip-cityLat' ).val(),
 				zip_cityLng: searchScope.find( '.zip-cityLng' ).val(),
 				miles: searchScope.find( 'input[name="miles"]' ).val(),
 			} );
 		} else {
-			updateFormData( {
+			updateFormData( searchElm, {
 				cityLat: undefined,
 				cityLng: undefined,
 				zip_cityLat: undefined,
@@ -984,27 +1080,28 @@ jQuery( document ).ready( function ( $ ) {
 		}
 
 		// Paging: get current page number, default 1 if not found
-		let page = parseInt( form_data.paged, 10 ) || 1;
-		updateFormData( {
+		let page = parseInt( state.form_data.paged, 10 ) || 1;
+		updateFormData( searchElm, {
 			paged: page > 1 ? page : undefined,
 		} );
 
 		// Update URL with form data
-		update_instant_search_url( form_data );
+		update_instant_search_url( state.form_data );
 	}
 
 	// Build form data without required value
-	function buildFormDataWithoutRequired() {
+	function buildFormDataWithoutRequired( searchElm ) {
+		const state = getState( searchElm );
 		const notRequiredFields = [ 'view', 'sort', 'paged' ];
 
-		Object.entries( form_data ).forEach( ( [ key, value ] ) => {
+		Object.entries( state.form_data ).forEach( ( [ key ] ) => {
 			if ( ! notRequiredFields.includes( key ) ) {
-				delete form_data[ key ];
+				delete state.form_data[ key ];
 			}
 		} );
 
 		// Update URL with form data
-		update_instant_search_url( form_data );
+		update_instant_search_url( state.form_data );
 	}
 
 	// Perform Instant Search with required value
@@ -1034,7 +1131,7 @@ jQuery( document ).ready( function ( $ ) {
 			performInstantSearch( searchElm );
 		} else {
 			// Build form data without required value
-			buildFormDataWithoutRequired();
+			buildFormDataWithoutRequired( searchElm );
 
 			// Filter Listing
 			performInstantSearch( searchElm );
@@ -1043,30 +1140,46 @@ jQuery( document ).ready( function ( $ ) {
 
 	// Handle Infinite Scroll
 	function handleScroll() {
-		const container = $(
+		const containers = $(
 			'.directorist-infinite-scroll .directorist-container-fluid .directorist-row'
 		);
-		if ( ! container.length || infinitePaginationIsLoading ) {
+
+		if ( ! containers.length ) {
 			return;
 		}
 
-		const containerBottom =
-			container.offset().top + container.outerHeight();
 		const scrollBottom = window.scrollY + window.innerHeight;
 
-		if ( scrollBottom >= containerBottom ) {
-			infinitePaginationIsLoading = true;
-			scrollingPage++;
+		containers.each( function () {
+			const container = $( this );
+			const state = getState( container );
 
-			// get active form
-			const activeForm = getActiveForm();
+			if (
+				state.infinitePaginationIsLoading ||
+				state.infinitePaginationCompleted
+			) {
+				return;
+			}
+
+			const containerBottom =
+				container.offset().top + container.outerHeight();
+
+			if ( scrollBottom < containerBottom ) {
+				return;
+			}
+
+			const activeForm = getActiveForm( container );
+			const searchContext = activeForm.length ? activeForm : container;
+
+			state.infinitePaginationIsLoading = true;
+			state.scrollingPage++;
 
 			// build form_data
-			buildFormData( activeForm );
+			buildFormData( searchContext );
 
 			// Load more listings
-			loadMoreListings( activeForm );
-		}
+			loadMoreListings( searchContext );
+		} );
 	}
 
 	// Close all search modal
@@ -1105,14 +1218,18 @@ jQuery( document ).ready( function ( $ ) {
 	}
 
 	// Determine the active form with intelligent fallback strategy
-	function getActiveForm() {
-		// Find forms directly in the document
-		const advancedForm = $(
-			'.directorist-advanced-search, .directorist-advanced-filter__form'
-		).first();
-		const searchForm = $(
-			'.directorist-basic-search, .directorist-search-form'
-		).first();
+	function getActiveForm( contextSource ) {
+		const contextRoot = getContextRoot( contextSource );
+		const scopedRoot = contextRoot.length ? contextRoot : $( document );
+
+		const advancedForm = scopedRoot
+			.find(
+				'.directorist-advanced-search, .directorist-advanced-filter__form'
+			)
+			.first();
+		const searchForm = scopedRoot
+			.find( '.directorist-basic-search, .directorist-search-form' )
+			.first();
 
 		// Create form candidates with metadata
 		const candidates = [
@@ -1139,7 +1256,15 @@ jQuery( document ).ready( function ( $ ) {
 		}
 
 		// Fallback: use responsive selection if no directory_type found
-		return screen.width > 575 ? advancedForm : searchForm;
+		if ( screen.width > 575 && advancedForm.length ) {
+			return advancedForm;
+		}
+
+		if ( searchForm.length ) {
+			return searchForm;
+		}
+
+		return advancedForm;
 	}
 
 	// Get directory type
@@ -1421,19 +1546,23 @@ jQuery( document ).ready( function ( $ ) {
 	// Note: The actual form field reset is handled by search-form-reset.js
 	// This listener handles the instant search data reset and triggers the search after form reset
 	window.addEventListener( 'directorist-form-reset-complete', function ( e ) {
+		const resetForms = Array.isArray( e.detail?.forms ) ? e.detail.forms : [];
+		const contextSource = resetForms.length ? resetForms[ 0 ] : document;
+
 		// Get active form
-		const activeForm = getActiveForm();
+		const activeForm = getActiveForm( contextSource );
+		const searchContext = activeForm.length ? activeForm : $( contextSource );
 
 		// Reset form_data - clear all search parameters
-		resetFormData();
+		resetFormData( searchContext );
 
 		// ✅ only update `page` to 1
-		updateFormData( { paged: 1 } );
+		updateFormData( searchContext, { paged: 1 } );
 
 		// Build form data and perform search after form reset
 		setTimeout( function () {
-			buildFormData( activeForm );
-			performInstantSearch( activeForm );
+			buildFormData( searchContext );
+			performInstantSearch( searchContext );
 		}, 150 );
 	} );
 
@@ -1488,7 +1617,11 @@ jQuery( document ).ready( function ( $ ) {
 			}
 
 			// Update active state IMMEDIATELY (before AJAX call) for better UX
-			const allNavbars = $( '.directorist-gutenberg-listings-archive-search-nav, .directorist-type-nav' );
+			const contextRoot = getContextRoot( $clickedLink );
+			const scopedRoot = contextRoot.length ? contextRoot : $( document );
+			const allNavbars = scopedRoot.find(
+				'.directorist-gutenberg-listings-archive-search-nav, .directorist-type-nav'
+			);
 			allNavbars.each( function() {
 				const $nav = $( this );
 				// Remove active class from all items in this navbar
@@ -1501,7 +1634,7 @@ jQuery( document ).ready( function ( $ ) {
 			$clickedLink.addClass( 'active' );
 
 			// reset form data
-			resetFormData();
+			resetFormData( $clickedLink );
 
 			// Get directory_type
 			const directory_type = getDirectoryType( $clickedLink );
@@ -1514,19 +1647,20 @@ jQuery( document ).ready( function ( $ ) {
 			}
 
 			// ✅ only update `directory_type`, preserve others
-			updateFormData( { directory_type } );
+			updateFormData( $clickedLink, { directory_type } );
 
 			// Update URL with form data
-			update_instant_search_url( form_data );
+			update_instant_search_url( getState( $clickedLink ).form_data );
 
 			// Set the directory_type value in all inputs
-			$( 'input[name="directory_type"]' ).val( directory_type );
+			scopedRoot.find( 'input[name="directory_type"]' ).val( directory_type );
 
 			// Get active form
-			const activeForm = getActiveForm();
+			const activeForm = getActiveForm( $clickedLink );
+			const searchContext = activeForm.length ? activeForm : $clickedLink;
 
 			// Instant search for directory type change
-			onDirectoryChange( activeForm );
+			onDirectoryChange( searchContext );
 		}
 	);
 
@@ -1544,14 +1678,14 @@ jQuery( document ).ready( function ( $ ) {
 
 			// get view as value
 			const view = getViewAs( $( this ) );
-			// ✅ only update `view`, preserve others
-			updateFormData( { view } );
+			const activeForm = getActiveForm( $( this ) );
+			const searchContext = activeForm.length ? activeForm : $( this );
 
-			// Get active form
-			const activeForm = getActiveForm();
+			// ✅ only update `view`, preserve others
+			updateFormData( searchContext, { view } );
 
 			// Instant search without required value
-			performInstantSearchWithoutRequiredValue( activeForm );
+			performInstantSearchWithoutRequiredValue( searchContext );
 		}
 	);
 
@@ -1570,14 +1704,14 @@ jQuery( document ).ready( function ( $ ) {
 
 			// get sort value
 			const sort = getSortValue( $( this ) );
-			// ✅ only update `sort`, preserve others
-			updateFormData( { sort } );
+			const activeForm = getActiveForm( $( this ) );
+			const searchContext = activeForm.length ? activeForm : $( this );
 
-			// get active form
-			const activeForm = getActiveForm();
+			// ✅ only update `sort`, preserve others
+			updateFormData( searchContext, { sort } );
 
 			// Instant search without required value
-			performInstantSearchWithoutRequiredValue( activeForm );
+			performInstantSearchWithoutRequiredValue( searchContext );
 		}
 	);
 
@@ -1587,23 +1721,23 @@ jQuery( document ).ready( function ( $ ) {
 		'.directorist-pagination .page-numbers',
 		function ( e ) {
 			e.preventDefault();
-			let page = form_data.paged || 1;
+			const activeForm = getActiveForm( $( this ) );
+			const searchContext = activeForm.length ? activeForm : $( this );
+			const state = getState( searchContext );
+			let page = state.form_data.paged || 1;
 			const currentPage = $( this ).text();
 			if ( currentPage ) {
-				page = parseInt( currentPage );
+				page = parseInt( currentPage, 10 );
 			} else if ( $( this ).hasClass( 'next' ) ) {
-				page = parseInt( page ) + 1;
+				page = parseInt( page, 10 ) + 1;
 			} else if ( $( this ).hasClass( 'prev' ) ) {
-				page = parseInt( page ) - 1;
+				page = parseInt( page, 10 ) - 1;
 			}
 			// ✅ only update `paged`, preserve others
-			updateFormData( { paged: page } );
-
-			// get active form
-			const activeForm = getActiveForm();
+			updateFormData( searchContext, { paged: page } );
 
 			// Instant search without required value
-			performInstantSearchWithoutRequiredValue( activeForm );
+			performInstantSearchWithoutRequiredValue( searchContext );
 		}
 	);
 
@@ -1642,11 +1776,6 @@ jQuery( document ).ready( function ( $ ) {
 
 	// Initialize Infinite Scroll
 	window.addEventListener( 'scroll', function () {
-		if ( infinitePaginationCompleted ) {
-			scrollingPage = 1;
-			return;
-		}
-
 		handleScroll();
 	} );
 
