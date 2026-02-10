@@ -2,6 +2,7 @@
  * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
+import { getLocalizedBlockDataByKey } from '@directorist-gutenberg/utils/localized-data';
 
 /**
  * Internal dependencies
@@ -39,6 +40,24 @@ const fields = {
 						value: 'manual',
 					},
 				],
+			},
+			directory_type_id: {
+				type: 'select',
+				label: __( 'Directory Type', 'directorist-gutenberg' ),
+				attrKey: 'directory_type_id',
+				options: () =>
+					getLocalizedBlockDataByKey( 'directory_options', [
+						{
+							label: __(
+								'Select Directory Type',
+								'directorist-gutenberg'
+							),
+							value: 0,
+						},
+					] ),
+				parseAsInt: true,
+				condition: ( currentAttributes ) =>
+					currentAttributes.context_mode === 'manual',
 			},
 		},
 	},

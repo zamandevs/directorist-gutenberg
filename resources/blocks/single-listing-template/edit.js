@@ -3,13 +3,43 @@
  */
 import { useInnerBlocksProps } from '@wordpress/block-editor';
 import { __ } from '@wordpress/i18n';
+import { useEffect } from '@wordpress/element';
+import { getLocalizedBlockDataByKey } from '@directorist-gutenberg/utils/localized-data';
 
 /**
  * Internal dependencies
  */
 import './editor.scss';
 
-export default function Edit() {
+export default function Edit( { attributes, setAttributes } ) {
+	const localizedDirectoryTypeId = parseInt(
+		getLocalizedBlockDataByKey( 'directory_type_id', 0 ),
+		10
+	);
+
+	useEffect( () => {
+		if ( attributes.context_mode !== 'manual' ) {
+			return;
+		}
+
+		if ( attributes.directory_type_id ) {
+			return;
+		}
+
+		if ( ! localizedDirectoryTypeId ) {
+			return;
+		}
+
+		setAttributes( {
+			directory_type_id: localizedDirectoryTypeId,
+		} );
+	}, [
+		attributes.context_mode,
+		attributes.directory_type_id,
+		localizedDirectoryTypeId,
+		setAttributes,
+	] );
+
 	const innerBlocksProps = useInnerBlocksProps(
 		{
 			className: 'directorist-gutenberg-single-listing-template__inner',
