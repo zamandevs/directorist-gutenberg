@@ -52,9 +52,6 @@ if ( $has_inner_content ) {
         'directorist-gutenberg/listings-header',
         'directorist-gutenberg/listings-search',
         'directorist-gutenberg/listings-filters',
-        'directorist-gutenberg/listings-archive-header',
-        'directorist-gutenberg/listings-archive-search',
-        'directorist-gutenberg/listings-archive-filters',
     ];
 
     foreach ( $parsed_inner_blocks as $inner_block ) {

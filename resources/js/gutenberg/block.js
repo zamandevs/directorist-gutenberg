@@ -127,8 +127,7 @@ export default function Block({
   }
 
   // Apply drop shadow to parent for listings-archive-header block
-  const isArchiveHeaderBlock =
-    name === "directorist-gutenberg/listings-archive-header";
+  const isArchiveHeaderBlock = name === "directorist-gutenberg/listings-header";
   const shadowStyle =
     isArchiveHeaderBlock && attributes.drop_shadow
       ? { boxShadow: attributes.drop_shadow }
