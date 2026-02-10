@@ -11,10 +11,15 @@ use DirectoristGutenberg\App\DTO\TemplateReadDTO;
 use DirectoristGutenberg\App\Services\Context\DirectoristTemplateContextResolver;
 
 class BlockServiceProvider implements Provider {
+    private array $editor_preview_post_stack = [];
+    private array $editor_preview_listing_cache = [];
+
     public function boot() {
         add_action( 'init', [ $this, 'register_blocks' ] );
         add_filter( 'block_categories_all', [ $this, 'register_block_categories' ], 10, 2 );
         add_action( 'enqueue_block_editor_assets', [ $this, 'localize_block_editor_scripts' ] );
+        add_filter( 'pre_render_block', [ $this, 'maybe_setup_listing_card_preview_context' ], 10, 3 );
+        add_filter( 'render_block', [ $this, 'maybe_restore_listing_card_preview_context' ], 9, 2 );
         add_filter( 'render_block', [ $this, 'maybe_enqueue_frontend_assets' ], 10, 2 );
     }
 
@@ -277,5 +282,208 @@ class BlockServiceProvider implements Provider {
         }
 
         return $block_content;
+    }
+
+    /**
+     * Set a preview listing post as global context for listing-card field blocks during editor SSR requests.
+     *
+     * @param mixed $pre_render
+     * @param array $parsed_block
+     * @param mixed $parent_block
+     * @return mixed
+     */
+    public function maybe_setup_listing_card_preview_context( $pre_render, array $parsed_block, $parent_block ) {
+        if ( ! $this->is_editor_listing_card_preview_request( $parsed_block ) ) {
+            return $pre_render;
+        }
+
+        $preview_listing = $this->resolve_preview_listing_post( $parsed_block, $parent_block );
+        if ( ! $preview_listing instanceof \WP_Post ) {
+            return $pre_render;
+        }
+
+        $current_post = get_post();
+        $this->editor_preview_post_stack[] = ( $current_post instanceof \WP_Post ) ? (int) $current_post->ID : 0;
+
+        $GLOBALS['post'] = $preview_listing;
+        setup_postdata( $preview_listing );
+
+        return $pre_render;
+    }
+
+    /**
+     * Restore editor preview post context after rendering listing-card field blocks.
+     *
+     * @param string $block_content
+     * @param array  $block
+     * @return string
+     */
+    public function maybe_restore_listing_card_preview_context( string $block_content, array $block ): string {
+        if ( ! $this->is_editor_ssr_request() ) {
+            return $block_content;
+        }
+
+        $block_name = ! empty( $block['blockName'] ) ? (string) $block['blockName'] : '';
+        if ( ! $this->is_listing_card_field_block_name( $block_name ) ) {
+            return $block_content;
+        }
+
+        if ( empty( $this->editor_preview_post_stack ) ) {
+            return $block_content;
+        }
+
+        $previous_post_id = (int) array_pop( $this->editor_preview_post_stack );
+        if ( $previous_post_id > 0 ) {
+            $previous_post = get_post( $previous_post_id );
+            if ( $previous_post instanceof \WP_Post ) {
+                $GLOBALS['post'] = $previous_post;
+                setup_postdata( $previous_post );
+                return $block_content;
+            }
+        }
+
+        wp_reset_postdata();
+        return $block_content;
+    }
+
+    private function is_editor_listing_card_preview_request( array $parsed_block ): bool {
+        if ( ! $this->is_editor_ssr_request() ) {
+            return false;
+        }
+
+        $block_name = ! empty( $parsed_block['blockName'] ) ? (string) $parsed_block['blockName'] : '';
+        return $this->is_listing_card_field_block_name( $block_name );
+    }
+
+    private function is_editor_ssr_request(): bool {
+        if ( ! defined( 'REST_REQUEST' ) || ! REST_REQUEST ) {
+            return false;
+        }
+
+        $context = ! empty( $_REQUEST['context'] )
+            ? sanitize_text_field( wp_unslash( $_REQUEST['context'] ) )
+            : '';
+
+        return $context === 'edit';
+    }
+
+    private function is_listing_card_field_block_name( string $block_name ): bool {
+        if ( strpos( $block_name, 'directorist-gutenberg/listing-card-' ) !== 0 ) {
+            return false;
+        }
+
+        return ! in_array(
+            $block_name,
+            [
+                'directorist-gutenberg/listing-card-template',
+                'directorist-gutenberg/listing-card-thumbnail',
+            ],
+            true
+        );
+    }
+
+    private function resolve_preview_listing_post( array $parsed_block, $parent_block ): ?\WP_Post {
+        $directory_type_id = $this->resolve_preview_directory_type_id( $parsed_block, $parent_block );
+        $cache_key = $directory_type_id > 0 ? $directory_type_id : 0;
+
+        if ( array_key_exists( $cache_key, $this->editor_preview_listing_cache ) ) {
+            $cached_listing_id = (int) $this->editor_preview_listing_cache[ $cache_key ];
+            if ( $cached_listing_id <= 0 ) {
+                return null;
+            }
+
+            $cached_post = get_post( $cached_listing_id );
+            return ( $cached_post instanceof \WP_Post ) ? $cached_post : null;
+        }
+
+        $listing_post_type = defined( 'ATBDP_POST_TYPE' ) ? ATBDP_POST_TYPE : 'at_biz_dir';
+        $query_args = [
+            'post_type'           => $listing_post_type,
+            'post_status'         => 'publish',
+            'posts_per_page'      => 1,
+            'orderby'             => 'date',
+            'order'               => 'DESC',
+            'fields'              => 'ids',
+            'ignore_sticky_posts' => true,
+            'no_found_rows'       => true,
+        ];
+
+        if ( $directory_type_id > 0 ) {
+            $query_args['meta_query'] = [
+                [
+                    'key'     => '_directory_type',
+                    'value'   => (string) $directory_type_id,
+                    'compare' => '=',
+                ],
+            ];
+        }
+
+        $query = new \WP_Query( $query_args );
+        $listing_id = ! empty( $query->posts ) ? (int) $query->posts[0] : 0;
+        wp_reset_postdata();
+
+        if ( $listing_id <= 0 && $directory_type_id > 0 ) {
+            unset( $query_args['meta_query'] );
+            $fallback_query = new \WP_Query( $query_args );
+            $listing_id = ! empty( $fallback_query->posts ) ? (int) $fallback_query->posts[0] : 0;
+            wp_reset_postdata();
+        }
+
+        $this->editor_preview_listing_cache[ $cache_key ] = $listing_id;
+
+        if ( $listing_id <= 0 ) {
+            return null;
+        }
+
+        $listing_post = get_post( $listing_id );
+        return ( $listing_post instanceof \WP_Post ) ? $listing_post : null;
+    }
+
+    private function resolve_preview_directory_type_id( array $parsed_block, $parent_block ): int {
+        if ( ! empty( $_REQUEST['directory_type'] ) ) {
+            $requested_directory = absint( wp_unslash( $_REQUEST['directory_type'] ) );
+            if ( $requested_directory > 0 ) {
+                return $requested_directory;
+            }
+        }
+
+        if ( ! empty( $parsed_block['attrs']['directory_type_id'] ) ) {
+            $attribute_directory = (int) $parsed_block['attrs']['directory_type_id'];
+            if ( $attribute_directory > 0 ) {
+                return $attribute_directory;
+            }
+        }
+
+        if (
+            is_object( $parent_block ) &&
+            ! empty( $parent_block->context['directorist-gutenberg/directoryTypeId'] )
+        ) {
+            $context_directory = (int) $parent_block->context['directorist-gutenberg/directoryTypeId'];
+            if ( $context_directory > 0 ) {
+                return $context_directory;
+            }
+        }
+
+        $post_id = ! empty( $_REQUEST['post_id'] ) ? absint( wp_unslash( $_REQUEST['post_id'] ) ) : 0;
+        $post = $post_id > 0 ? get_post( $post_id ) : get_post();
+
+        /**
+         * @var DirectoristTemplateContextResolver
+         */
+        $context_resolver = directorist_gutenberg_singleton( DirectoristTemplateContextResolver::class );
+        $template_context = $context_resolver->resolve_editor_context( $post, null );
+        $resolved_directory = (int) $template_context->get_directory_type_id();
+        if ( $resolved_directory > 0 ) {
+            return $resolved_directory;
+        }
+
+        if ( function_exists( 'directorist_get_default_directory' ) ) {
+            $default_directory = (int) directorist_get_default_directory();
+            if ( $default_directory > 0 ) {
+                return $default_directory;
+            }
+        }
+
+        return 0;
     }
 }
