@@ -10,8 +10,23 @@ import { __ } from '@wordpress/i18n';
  */
 import './editor.scss';
 
+const CORE_LAYOUT_BLOCKS = [
+	'core/group',
+	'core/columns',
+	'core/column',
+	'core/row',
+	'core/stack',
+	'core/spacer',
+	'core/separator',
+	'core/heading',
+	'core/paragraph',
+	'core/image',
+	'core/buttons',
+	'core/button',
+];
+
 export default function Edit() {
-	const allowedBlocks = getBlockTypes()
+	const listingFieldBlocks = getBlockTypes()
 		.filter( ( block ) => {
 			return (
 				block.name.startsWith(
@@ -21,6 +36,10 @@ export default function Edit() {
 			);
 		} )
 		.map( ( block ) => block.name );
+
+	const allowedBlocks = Array.from(
+		new Set( [ ...listingFieldBlocks, ...CORE_LAYOUT_BLOCKS ] )
+	);
 
 	const innerBlocksProps = useInnerBlocksProps(
 		{
@@ -40,7 +59,7 @@ export default function Edit() {
 		<div className="directorist-gutenberg-listing-card-template-editor">
 			<p className="directorist-gutenberg-listing-card-template-editor__notice">
 				{ __(
-					'Compose card fields that represent a listing item.',
+					'Edit one card blueprint here. It will be reused for every listing in the loop.',
 					'directorist-gutenberg'
 				) }
 			</p>
