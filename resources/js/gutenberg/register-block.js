@@ -14,6 +14,7 @@ import ReactSVG from "react-inlinesvg";
 import directoristLogo from "@block-icon/directorist-logo.svg";
 import Block from "./block";
 import { getLocalizedBlockDataByKey } from "@directorist-gutenberg/utils/localized-data";
+import { normalizeTextAlignValue } from "./text-align-utils";
 import WidthControls from "./width-control";
 import { normalizeWidthValue } from "./width-utils";
 
@@ -149,6 +150,10 @@ export default function registerBlock({
     metadata.name,
     templateContext,
   );
+  const hasTextAlignAttribute = Object.prototype.hasOwnProperty.call(
+    metadata.attributes || {},
+    "textAlign",
+  );
 
   const metadataWithResponsiveWidth = {
     ...metadata,
@@ -169,6 +174,21 @@ export default function registerBlock({
           mobile: "",
         },
       },
+      ...(hasTextAlignAttribute
+        ? {
+            textAlign_responsive: {
+              type: "object",
+              default: {
+                desktop: normalizeTextAlignValue(
+                  metadata.attributes?.textAlign?.default,
+                  "",
+                ),
+                tablet: "",
+                mobile: "",
+              },
+            },
+          }
+        : {}),
     },
   };
 

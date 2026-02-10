@@ -11,6 +11,7 @@ import clsx from "clsx";
 import Controls from "./components/controls";
 import BlockServerRender from "./components/block-server-render";
 import useResolvedDirectoryTypeId from "./hooks/useResolvedDirectoryTypeId";
+import { getResponsiveTextAlignClassNames } from "./text-align-utils";
 import { getResponsiveWidthClassNames } from "./width-utils";
 
 /**
@@ -56,6 +57,8 @@ export default function Block({
   // Priority: fields > ControlsComponent
   const controlsToUse = fields || ControlsComponent;
   const customClasses = setCustomClassNames(classNames);
+  const responsiveTextAlignClasses =
+    getResponsiveTextAlignClassNames(attributes);
   const responsiveWidthClasses = getResponsiveWidthClassNames(attributes);
 
   const isListingCardFieldBlock =
@@ -123,9 +126,6 @@ export default function Block({
     );
   }
 
-  // Block props with textAlign support
-  const { textAlign } = attributes || {};
-
   // Apply drop shadow to parent for listings-archive-header block
   const isArchiveHeaderBlock =
     name === "directorist-gutenberg/listings-archive-header";
@@ -138,10 +138,8 @@ export default function Block({
     className: clsx(
       "directorist-gutenberg-listing-card-block",
       customClasses,
+      responsiveTextAlignClasses,
       responsiveWidthClasses,
-      {
-        [`has-text-align-${textAlign}`]: textAlign,
-      },
     ),
     style: shadowStyle,
   });

@@ -335,6 +335,79 @@ function directorist_gutenberg_get_block_width_class( array $attributes, string 
 }
 
 /**
+ * Normalize supported text alignment values to class-safe tokens.
+ *
+ * @param mixed  $text_align Raw text align value.
+ * @param string $fallback Fallback align token.
+ * @return string
+ */
+function directorist_gutenberg_normalize_text_align_value( $text_align, string $fallback = '' ): string {
+	$normalized = '';
+
+	if ( $text_align !== null && $text_align !== '' ) {
+		$normalized = strtolower( trim( (string) $text_align ) );
+	}
+
+	$allowed_values = [ 'left', 'center', 'right', 'justify' ];
+	if ( in_array( $normalized, $allowed_values, true ) ) {
+		return $normalized;
+	}
+
+	if ( $fallback === '' ) {
+		return '';
+	}
+
+	return directorist_gutenberg_normalize_text_align_value( $fallback, '' );
+}
+
+/**
+ * Resolve responsive text alignment values from block attributes.
+ *
+ * @param array  $attributes Block attributes array.
+ * @param string $align_key Text alignment attribute key.
+ * @param string $responsive_align_key Responsive text alignment attribute key.
+ * @return array{desktop:string,tablet:string,mobile:string}
+ */
+function directorist_gutenberg_get_responsive_text_align_values(
+	array $attributes,
+	string $align_key = 'textAlign',
+	string $responsive_align_key = 'textAlign_responsive'
+): array {
+	$desktop_align = directorist_gutenberg_normalize_text_align_value(
+		$attributes[ $align_key ] ?? '',
+		''
+	);
+
+	$responsive_alignments = [];
+	if ( ! empty( $attributes[ $responsive_align_key ] ) ) {
+		$responsive_alignments = $attributes[ $responsive_align_key ];
+		if ( is_string( $responsive_alignments ) ) {
+			$decoded_alignments = json_decode( $responsive_alignments, true );
+			$responsive_alignments = is_array( $decoded_alignments ) ? $decoded_alignments : [];
+		}
+	}
+
+	if ( ! is_array( $responsive_alignments ) ) {
+		$responsive_alignments = [];
+	}
+
+	return [
+		'desktop' => directorist_gutenberg_normalize_text_align_value(
+			$responsive_alignments['desktop'] ?? '',
+			$desktop_align
+		),
+		'tablet' => directorist_gutenberg_normalize_text_align_value(
+			$responsive_alignments['tablet'] ?? '',
+			''
+		),
+		'mobile' => directorist_gutenberg_normalize_text_align_value(
+			$responsive_alignments['mobile'] ?? '',
+			''
+		),
+	];
+}
+
+/**
  * Get text alignment class name from block attributes
  *
  * @param array $attributes Block attributes array
@@ -342,10 +415,26 @@ function directorist_gutenberg_get_block_width_class( array $attributes, string 
  * @return string Text alignment class name (e.g., 'has-text-align-center') or empty string if not set
  */
 function directorist_gutenberg_get_text_align_class( array $attributes, string $align_key = 'textAlign' ): string {
-	if ( empty( $attributes[ $align_key ] ) ) {
-		return '';
+	$responsive_text_align_values = directorist_gutenberg_get_responsive_text_align_values(
+		$attributes,
+		$align_key,
+		$align_key . '_responsive'
+	);
+
+	$class_names = [];
+	if ( ! empty( $responsive_text_align_values['desktop'] ) ) {
+		$class_names[] = 'has-text-align-' . esc_attr( $responsive_text_align_values['desktop'] );
 	}
-	return 'has-text-align-' . esc_attr( $attributes[ $align_key ] );
+
+	if ( ! empty( $responsive_text_align_values['tablet'] ) ) {
+		$class_names[] = 'directorist-gutenberg-has-text-align-tablet-' . esc_attr( $responsive_text_align_values['tablet'] );
+	}
+
+	if ( ! empty( $responsive_text_align_values['mobile'] ) ) {
+		$class_names[] = 'directorist-gutenberg-has-text-align-mobile-' . esc_attr( $responsive_text_align_values['mobile'] );
+	}
+
+	return implode( ' ', array_filter( array_unique( $class_names ) ) );
 }
 
 function directorist_gutenberg_echo( string $content ) {

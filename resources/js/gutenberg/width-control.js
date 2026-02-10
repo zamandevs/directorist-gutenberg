@@ -10,17 +10,12 @@ import { __ } from "@wordpress/i18n";
  * External dependencies
  */
 import clsx from "clsx";
+import DeviceToggleControl from "./components/controls/device-toggle-control";
 
 import {
   normalizeResponsiveWidthValues,
   normalizeWidthValue,
 } from "./width-utils";
-
-const deviceOptions = [
-  { label: __("Desktop", "directorist-gutenberg"), value: "desktop" },
-  { label: __("Tablet", "directorist-gutenberg"), value: "tablet" },
-  { label: __("Mobile", "directorist-gutenberg"), value: "mobile" },
-];
 
 const widthOptions = [
   { label: __("100%", "directorist-gutenberg"), value: "100" },
@@ -65,20 +60,10 @@ export default function WidthControls({ attributes, setAttributes }) {
 
   return (
     <BlockControls>
-      <ToolbarGroup className="directorist-gutenberg-toolbar">
-        {deviceOptions.map(({ label, value }) => (
-          <ToolbarButton
-            key={value}
-            variant="secondary"
-            className={clsx({
-              "is-selected": selectedDevice === value,
-            })}
-            onClick={() => setSelectedDevice(value)}
-          >
-            <span>{label}</span>
-          </ToolbarButton>
-        ))}
-      </ToolbarGroup>
+      <DeviceToggleControl
+        selectedDevice={selectedDevice}
+        onChange={setSelectedDevice}
+      />
       <ToolbarGroup className="directorist-gutenberg-toolbar">
         {widthOptions.map(({ label, value }) => (
           <ToolbarButton
