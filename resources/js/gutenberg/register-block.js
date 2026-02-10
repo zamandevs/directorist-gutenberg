@@ -15,7 +15,6 @@ import directoristLogo from '@block-icon/directorist-logo.svg';
 import Block from './block';
 import { getLocalizedBlockDataByKey } from '@directorist-gutenberg/utils/localized-data';
 import WidthControls from './width-control';
-
 export default function registerBlock( {
 	metadata,
 	Edit,
@@ -29,14 +28,28 @@ export default function registerBlock( {
 	classNames = '',
 	showWidthControls = true,
 } ) {
-	if ( 'directorist_gbt' !== typenow ) {
-		return;
-	}
+	if ( Array.isArray( templateTypes ) && templateTypes.length > 0 ) {
+		const templateContext = getLocalizedBlockDataByKey(
+			'template_context',
+			{}
+		);
+		const localizedTemplateType =
+			getLocalizedBlockDataByKey( 'template_type', '' ) || '';
+		let effectiveTemplateType = localizedTemplateType;
 
-	if ( templateTypes ) {
-		const template_type = getLocalizedBlockDataByKey( 'template_type' );
+		if ( ! effectiveTemplateType ) {
+			if ( templateContext?.template_kind === 'archive' ) {
+				effectiveTemplateType = 'listings-archive';
+			} else if ( templateContext?.template_kind === 'single' ) {
+				effectiveTemplateType = 'single-listing';
+			}
+		}
 
-		if ( ! templateTypes.includes( template_type ) ) {
+		// Only gate registration when we can infer a template type.
+		if (
+			effectiveTemplateType &&
+			! templateTypes.includes( effectiveTemplateType )
+		) {
 			return;
 		}
 	}
