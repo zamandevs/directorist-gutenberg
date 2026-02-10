@@ -7,7 +7,12 @@ use Directorist\Helper;
 
 $listings = new Directorist_Listings();
 
-$listings->directory_type_id = $attributes['directory_type_id'];
+$context_directory_type_id = ! empty( $block->context['directorist-gutenberg/directoryTypeId'] ) ? (int) $block->context['directorist-gutenberg/directoryTypeId'] : 0;
+$directory_type_id = ! empty( $attributes['directory_type_id'] ) ? (int) $attributes['directory_type_id'] : $context_directory_type_id;
+
+if ( $directory_type_id > 0 ) {
+    $listings->directory_type_id = $directory_type_id;
+}
 
 $default_view = get_post_meta( $attributes['template_id'], 'default_view', true );
 
@@ -54,7 +59,7 @@ if ( ! empty( $attributes['drop_shadow'] ) ) {
 ?>
 <div <?php echo $wrapper_attributes; $listings->data_atts() ?>>
     <?php
-        echo '<div class="directorist-gutenberg-listings-archive-header">';
+        echo '<div class="directorist-gutenberg-listings-header directorist-gutenberg-listings-archive-header">';
 		Helper::get_template( 'archive/header-bar', [ 'listings' => $listings ] );
 		echo '</div>';
     ?>

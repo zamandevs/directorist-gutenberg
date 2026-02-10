@@ -51,6 +51,11 @@
 	"supports": {
 		"html": false
 	},
+	"providesContext": {
+		"directorist-gutenberg/directoryTypeId": "directory_type_id",
+		"directorist-gutenberg/contextMode": "context_mode",
+		"directorist-gutenberg/instanceId": "instance_id"
+	},
 	"textdomain": "directorist-gutenberg",
 	"editorScript": "file:./index.js",
 	"editorStyle": "file:./index.css",
