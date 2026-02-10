@@ -45,6 +45,7 @@ export default function Block( {
 	StylesControls,
 	classNames = '',
 	name,
+	clientId,
 	...rest
 } ) {
 	// Determine which Controls to use: fields definition or Controls component
@@ -68,6 +69,7 @@ export default function Block( {
 						fields={ controlsToUse }
 						attributes={ attributes }
 						setAttributes={ setAttributes }
+						clientId={ clientId }
 					/>
 				) }
 				{ StylesControls && (
@@ -80,6 +82,7 @@ export default function Block( {
 					attributes={ attributes }
 					setAttributes={ setAttributes }
 					name={ name }
+					clientId={ clientId }
 					{ ...rest }
 				/>
 			</div>
@@ -118,6 +121,7 @@ export default function Block( {
 					fields={ controlsToUse }
 					attributes={ attributes }
 					setAttributes={ setAttributes }
+					clientId={ clientId }
 				/>
 			) }
 			{ StylesControls && (
@@ -130,6 +134,7 @@ export default function Block( {
 				attributes={ attributes }
 				setAttributes={ setAttributes }
 				name={ name }
+				clientId={ clientId }
 				{ ...rest }
 			/>
 		</div>

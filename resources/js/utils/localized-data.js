@@ -3,6 +3,23 @@ const getDataByKey = ( data, key, defaultValue = null ) => {
 	return data[ key ] !== undefined ? data[ key ] : defaultValue;
 };
 
+const normalizeDirectoryTypeId = ( value ) => {
+	const parsed = parseInt( value, 10 );
+	return Number.isNaN( parsed ) || parsed <= 0 ? 0 : parsed;
+};
+
+const resolveFieldsPayload = ( payload ) => {
+	if ( ! payload || typeof payload !== 'object' ) {
+		return {};
+	}
+
+	if ( payload.fields && typeof payload.fields === 'object' ) {
+		return payload.fields;
+	}
+
+	return payload;
+};
+
 // Gutenberg Block Editor Data
 export const getLocalizedBlockData = () => {
 	return window.directorist_gutenberg_block_data || {};
@@ -15,16 +32,27 @@ export const getLocalizedBlockDataByKey = ( key, defaultValue = null ) => {
 
 export const getSubmissionFormFields = () => {
 	const data = getLocalizedBlockData();
+	return resolveFieldsPayload( data?.submission_form_fields );
+};
 
-	if (
-		data &&
-		data.submission_form_fields &&
-		data.submission_form_fields.fields
-	) {
-		return data.submission_form_fields.fields;
+export const getSubmissionFormFieldsByDirectory = ( directoryTypeId ) => {
+	const normalizedDirectoryTypeId =
+		normalizeDirectoryTypeId( directoryTypeId );
+	if ( ! normalizedDirectoryTypeId ) {
+		return {};
 	}
 
-	return {};
+	const data = getLocalizedBlockData();
+	const fieldsByDirectory = data?.submission_form_fields_by_directory;
+	if ( ! fieldsByDirectory || typeof fieldsByDirectory !== 'object' ) {
+		return {};
+	}
+
+	const directoryFields =
+		fieldsByDirectory[ normalizedDirectoryTypeId ] ||
+		fieldsByDirectory[ String( normalizedDirectoryTypeId ) ];
+
+	return resolveFieldsPayload( directoryFields );
 };
 
 // Admin Page Data
@@ -46,6 +74,7 @@ export default {
 	getLocalizedBlockData,
 	getLocalizedBlockDataByKey,
 	getSubmissionFormFields,
+	getSubmissionFormFieldsByDirectory,
 	getLocalizedAdminData,
 	getLocalizedAdminDataByKey,
 	getDirectories,

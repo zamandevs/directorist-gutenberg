@@ -9,6 +9,7 @@ import { useEffect } from '@wordpress/element';
  * Internal dependencies
  */
 import { useSubmissionFields } from '@directorist-gutenberg/gutenberg/hooks/useSubmissionFields';
+import useResolvedDirectoryTypeId from '@directorist-gutenberg/gutenberg/hooks/useResolvedDirectoryTypeId';
 
 /**
  * Custom Field Select Component
@@ -19,14 +20,19 @@ import { useSubmissionFields } from '@directorist-gutenberg/gutenberg/hooks/useS
  * @param {Object} props.field - Field configuration
  * @param {Object} props.attributes - Block attributes
  * @param {Function} props.setAttributes - Function to set block attributes
+ * @param {string} props.clientId - Current block client id
  */
 export default function CustomFieldSelect( {
 	fieldKey,
 	field,
 	attributes,
 	setAttributes,
+	clientId,
 } ) {
-	const { getFieldsOptions, directoryTypeId } = useSubmissionFields();
+	const resolvedDirectoryTypeId = useResolvedDirectoryTypeId( clientId );
+	const { getFieldsOptions, directoryTypeId } = useSubmissionFields( {
+		directoryTypeId: resolvedDirectoryTypeId,
+	} );
 	const { label, attrKey, fieldType, useDirectoryType } = field;
 
 	const attributeKey = attrKey || fieldKey;
@@ -37,10 +43,15 @@ export default function CustomFieldSelect( {
 
 	// Handle directory_type_id update if needed
 	useEffect( () => {
-		if ( useDirectoryType && directoryTypeId ) {
+		const currentDirectoryTypeId = parseInt( attributes.directory_type_id, 10 ) || 0;
+		if (
+			useDirectoryType &&
+			directoryTypeId &&
+			currentDirectoryTypeId !== directoryTypeId
+		) {
 			setAttributes( { directory_type_id: directoryTypeId } );
 		}
-	}, [ directoryTypeId, useDirectoryType, setAttributes ] );
+	}, [ attributes.directory_type_id, directoryTypeId, useDirectoryType, setAttributes ] );
 
 	const onChange = ( newValue ) => {
 		setAttributes( { [ attributeKey ]: newValue } );
@@ -58,4 +69,3 @@ export default function CustomFieldSelect( {
 		</>
 	);
 }
-

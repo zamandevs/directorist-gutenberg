@@ -9,30 +9,50 @@ import { __ } from '@wordpress/i18n';
 import {
 	getLocalizedBlockData,
 	getSubmissionFormFields,
+	getSubmissionFormFieldsByDirectory,
 } from '@directorist-gutenberg/utils/localized-data';
 
-export const useSubmissionFields = () => {
-	const { directory_type_id } = getLocalizedBlockData();
-	const fields = getSubmissionFormFields();
+const normalizeDirectoryTypeId = ( value ) => {
+	const parsed = parseInt( value, 10 );
+	return Number.isNaN( parsed ) || parsed <= 0 ? 0 : parsed;
+};
+
+export const useSubmissionFields = ( options = {} ) => {
+	const localizedData = getLocalizedBlockData();
+	const localizedDirectoryTypeId = normalizeDirectoryTypeId(
+		localizedData.directory_type_id
+	);
+	const preferredDirectoryTypeId = normalizeDirectoryTypeId(
+		options.directoryTypeId
+	);
+	const directoryTypeId =
+		preferredDirectoryTypeId || localizedDirectoryTypeId;
+
+	const scopedFields = getSubmissionFormFieldsByDirectory( directoryTypeId );
+	const fallbackFields = getSubmissionFormFields();
+	const fields =
+		scopedFields && Object.keys( scopedFields ).length
+			? scopedFields
+			: fallbackFields;
 
 	function getFieldsOptions( type, name ) {
-		const options = [
+		const fieldOptions = [
 			{
 				value: '',
-				label: __( 'Select...', 'directorist-gutenberg' ),
+				label: __( 'Select…', 'directorist-gutenberg' ),
 			},
 		];
 
 		for ( const field of Object.values( fields ) ) {
 			if ( field.widget_group === type && field.widget_name === name ) {
-				options.push( {
+				fieldOptions.push( {
 					value: field.field_key,
 					label: field.label,
 				} );
 			}
 		}
 
-		return options;
+		return fieldOptions;
 	}
 
 	function doesPresetFieldExist( name ) {
@@ -74,9 +94,7 @@ export const useSubmissionFields = () => {
 	}
 
 	return {
-		directoryTypeId: directory_type_id
-			? parseInt( directory_type_id )
-			: null,
+		directoryTypeId: directoryTypeId || null,
 		fields,
 		getField,
 		getCustomFields,

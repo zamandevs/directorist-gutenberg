@@ -22,8 +22,9 @@ import TemplateIdHandler from './template-id-handler';
  * @param {Object} props.fields - Fields definition object
  * @param {Object} props.attributes - Block attributes
  * @param {Function} props.setAttributes - Function to set block attributes
+ * @param {string} props.clientId - Current block client id
  */
-export default function Controls( { fields, attributes, setAttributes } ) {
+export default function Controls( { fields, attributes, setAttributes, clientId } ) {
 	// Call useArchiveBlockCommonTask hook if useHook is true in fields
 	if ( fields && typeof fields === 'object' && fields.useArchiveBlockCommonTask ) {
 		useArchiveBlockCommonTask( { setAttributes } );
@@ -82,6 +83,7 @@ export default function Controls( { fields, attributes, setAttributes } ) {
 							field={ field }
 							attributes={ attributes }
 							setAttributes={ setAttributes }
+							clientId={ clientId }
 						/>
 					</div>
 				);
@@ -117,4 +119,3 @@ export default function Controls( { fields, attributes, setAttributes } ) {
 		</InspectorControls>
 	);
 }
-

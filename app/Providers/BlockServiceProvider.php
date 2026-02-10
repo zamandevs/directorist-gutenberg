@@ -128,8 +128,9 @@ class BlockServiceProvider implements Provider {
             'wax_intelligent'   => [
                 'api_base_url' => directorist_gutenberg_config( 'wax-intelligent.api_base_url' ),
             ],
-            'submission_form_fields' => ! empty( $directory_type_id ) ? get_term_meta( $directory_type_id, "submission_form_fields", true ) : null,
-            'template_links'         => $template_links,
+            'submission_form_fields'              => ! empty( $directory_type_id ) ? get_term_meta( $directory_type_id, "submission_form_fields", true ) : null,
+            'submission_form_fields_by_directory' => $this->get_submission_form_fields_by_directory(),
+            'template_links'                      => $template_links,
         ];
 
         // Localize the script
@@ -165,6 +166,31 @@ class BlockServiceProvider implements Provider {
         }
 
         return $options;
+    }
+
+    private function get_submission_form_fields_by_directory(): array {
+        if ( ! function_exists( 'directorist_get_directories' ) ) {
+            return [];
+        }
+
+        $directories = directorist_get_directories( [ 'hide_empty' => false ] );
+        if ( is_wp_error( $directories ) || empty( $directories ) ) {
+            return [];
+        }
+
+        $submission_fields_map = [];
+
+        foreach ( $directories as $directory ) {
+            $directory_type_id = isset( $directory->term_id ) ? (int) $directory->term_id : 0;
+
+            if ( $directory_type_id <= 0 ) {
+                continue;
+            }
+
+            $submission_fields_map[ $directory_type_id ] = get_term_meta( $directory_type_id, "submission_form_fields", true );
+        }
+
+        return $submission_fields_map;
     }
 
     private function resolve_legacy_template_type( \WP_Post $post, string $template_kind ): string {
