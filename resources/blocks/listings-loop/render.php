@@ -5,16 +5,26 @@ defined( 'ABSPATH' ) || exit;
 use Directorist\Directorist_Listings;
 use DirectoristGutenberg\App\Services\Context\DirectoristTemplateContextResolver;
 
+$context_mode = ! empty( $attributes['context_mode'] ) ? sanitize_text_field( $attributes['context_mode'] ) : 'manual';
 $directory_type_id = ! empty( $attributes['directory_type_id'] ) ? (int) $attributes['directory_type_id'] : 0;
 
-if ( $directory_type_id <= 0 ) {
+if ( $context_mode === 'inferred' && $directory_type_id <= 0 ) {
     $context_resolver = directorist_gutenberg_singleton( DirectoristTemplateContextResolver::class );
     $template_context = $context_resolver->resolve_editor_context( get_post(), null );
     $directory_type_id = (int) $template_context->get_directory_type_id();
 }
 
-if ( $directory_type_id <= 0 && function_exists( 'directorist_get_default_directory' ) ) {
+if ( $context_mode === 'inferred' && $directory_type_id <= 0 && function_exists( 'directorist_get_default_directory' ) ) {
     $directory_type_id = (int) directorist_get_default_directory();
+}
+
+if ( $context_mode === 'manual' && $directory_type_id <= 0 ) {
+    ?>
+    <div <?php echo get_block_wrapper_attributes( [ 'class' => 'directorist-gutenberg-listings-loop directorist-gutenberg-listings-loop-empty' ] ); ?>>
+        <p><?php esc_html_e( 'Select a directory type in Listings Loop settings.', 'directorist-gutenberg' ); ?></p>
+    </div>
+    <?php
+    return;
 }
 
 $listings = new Directorist_Listings();

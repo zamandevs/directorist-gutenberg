@@ -15,6 +15,53 @@ import directoristLogo from '@block-icon/directorist-logo.svg';
 import Block from './block';
 import { getLocalizedBlockDataByKey } from '@directorist-gutenberg/utils/localized-data';
 import WidthControls from './width-control';
+
+const mergeUniqueArrayValues = ( first = [], second = [] ) => {
+	return Array.from( new Set( [ ...first, ...second ].filter( Boolean ) ) );
+};
+
+const getDynamicCompositionConstraints = ( blockName, templateContext ) => {
+	const surface = templateContext?.surface || '';
+	const isContextualSiteTemplate = surface === 'site_template';
+
+	if ( isContextualSiteTemplate ) {
+		return {};
+	}
+
+	const loopParentBlocks = [ 'directorist-gutenberg/listings-loop' ];
+	const constraints = {};
+
+	const loopUtilityBlocks = [
+		'directorist-gutenberg/listings-header',
+		'directorist-gutenberg/listings-search',
+		'directorist-gutenberg/listings-filters',
+		'directorist-gutenberg/listings-archive-header',
+		'directorist-gutenberg/listings-archive-search',
+		'directorist-gutenberg/listings-archive-filters',
+	];
+
+	if ( loopUtilityBlocks.includes( blockName ) ) {
+		constraints.parent = loopParentBlocks;
+	}
+
+	if ( blockName === 'directorist-gutenberg/listing-card-template' ) {
+		constraints.parent = loopParentBlocks;
+	}
+
+	const isListingCardFieldBlock =
+		blockName.startsWith( 'directorist-gutenberg/listing-card-' ) &&
+		blockName !== 'directorist-gutenberg/listing-card-template';
+
+	if ( isListingCardFieldBlock ) {
+		constraints.ancestor = [
+			'directorist-gutenberg/listing-card-template',
+			'directorist-gutenberg/single-listing-template',
+		];
+	}
+
+	return constraints;
+};
+
 export default function registerBlock( {
 	metadata,
 	Edit,
@@ -28,11 +75,12 @@ export default function registerBlock( {
 	classNames = '',
 	showWidthControls = true,
 } ) {
+	const templateContext = getLocalizedBlockDataByKey(
+		'template_context',
+		{}
+	);
+
 	if ( Array.isArray( templateTypes ) && templateTypes.length > 0 ) {
-		const templateContext = getLocalizedBlockDataByKey(
-			'template_context',
-			{}
-		);
 		const localizedTemplateType =
 			getLocalizedBlockDataByKey( 'template_type', '' ) || '';
 		let effectiveTemplateType = localizedTemplateType;
@@ -94,12 +142,36 @@ export default function registerBlock( {
 		</>
 	);
 
+	const dynamicConstraints = getDynamicCompositionConstraints(
+		metadata.name,
+		templateContext
+	);
+
+	const resolvedProps = {
+		...props,
+		...dynamicConstraints,
+	};
+
+	if ( props.parent || dynamicConstraints.parent ) {
+		resolvedProps.parent = mergeUniqueArrayValues(
+			props.parent || [],
+			dynamicConstraints.parent || []
+		);
+	}
+
+	if ( props.ancestor || dynamicConstraints.ancestor ) {
+		resolvedProps.ancestor = mergeUniqueArrayValues(
+			props.ancestor || [],
+			dynamicConstraints.ancestor || []
+		);
+	}
+
 	registerBlockType( metadata.name, {
 		icon,
 		example: {
 			attributes: exampleAttributes,
 		},
 		edit: WrappedEdit,
-		...props,
+		...resolvedProps,
 	} );
 }

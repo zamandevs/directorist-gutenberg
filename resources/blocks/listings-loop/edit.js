@@ -4,6 +4,7 @@
 import { useInnerBlocksProps } from '@wordpress/block-editor';
 import { __ } from '@wordpress/i18n';
 import { useEffect } from '@wordpress/element';
+import { getLocalizedBlockDataByKey } from '@directorist-gutenberg/utils/localized-data';
 
 /**
  * Internal dependencies
@@ -27,6 +28,11 @@ const TEMPLATE = [
 ];
 
 export default function Edit( { attributes, setAttributes, clientId } ) {
+	const localizedDirectoryTypeId = parseInt(
+		getLocalizedBlockDataByKey( 'directory_type_id', 0 ),
+		10
+	);
+
 	useEffect( () => {
 		if ( attributes.instance_id ) {
 			return;
@@ -36,6 +42,29 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 			instance_id: `loop-${ clientId }`,
 		} );
 	}, [ attributes.instance_id, clientId, setAttributes ] );
+
+	useEffect( () => {
+		if ( attributes.context_mode !== 'manual' ) {
+			return;
+		}
+
+		if ( attributes.directory_type_id ) {
+			return;
+		}
+
+		if ( ! localizedDirectoryTypeId ) {
+			return;
+		}
+
+		setAttributes( {
+			directory_type_id: localizedDirectoryTypeId,
+		} );
+	}, [
+		attributes.context_mode,
+		attributes.directory_type_id,
+		localizedDirectoryTypeId,
+		setAttributes,
+	] );
 
 	const innerBlocksProps = useInnerBlocksProps(
 		{

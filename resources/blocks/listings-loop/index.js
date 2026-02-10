@@ -2,6 +2,7 @@
  * WordPress dependencies
  */
 import { __ } from '@wordpress/i18n';
+import { getLocalizedBlockDataByKey } from '@directorist-gutenberg/utils/localized-data';
 
 /**
  * Internal dependencies
@@ -18,7 +19,6 @@ import loopIcon from '@block-icon/archive.svg';
 import ReactSVG from 'react-inlinesvg';
 
 const fields = {
-	useArchiveBlockCommonTask: true,
 	loopSettings: {
 		title: __( 'Listings Loop Settings', 'directorist-gutenberg' ),
 		initialOpen: true,
@@ -37,6 +37,24 @@ const fields = {
 						value: 'inferred',
 					},
 				],
+			},
+			directory_type_id: {
+				type: 'select',
+				label: __( 'Directory Type', 'directorist-gutenberg' ),
+				attrKey: 'directory_type_id',
+				options: () =>
+					getLocalizedBlockDataByKey( 'directory_options', [
+						{
+							label: __(
+								'Select Directory Type',
+								'directorist-gutenberg'
+							),
+							value: 0,
+						},
+					] ),
+				parseAsInt: true,
+				condition: ( currentAttributes ) =>
+					currentAttributes.context_mode === 'manual',
 			},
 			default_view: {
 				type: 'defaultViewSelect',

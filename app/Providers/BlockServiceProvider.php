@@ -122,6 +122,7 @@ class BlockServiceProvider implements Provider {
         $localized_data = [
             'template_type'     => $this->resolve_legacy_template_type( $post, $template_context->get_template_kind() ),
             'directory_type_id' => $directory_type_id,
+            'directory_options' => $this->get_directory_options(),
             'template_context'  => $template_context->to_array(),
             'all_templates_url' => admin_url( 'edit.php?post_type=at_biz_dir&page=directorist-template-builder' ),
             'wax_intelligent'   => [
@@ -137,6 +138,33 @@ class BlockServiceProvider implements Provider {
             'directorist_gutenberg_block_data',
             $localized_data
         );
+    }
+
+    private function get_directory_options(): array {
+        $options = [
+            [
+                'label' => __( 'Select Directory Type', 'directorist-gutenberg' ),
+                'value' => 0,
+            ],
+        ];
+
+        if ( ! function_exists( 'directorist_get_directories' ) ) {
+            return $options;
+        }
+
+        $directories = directorist_get_directories( [ 'hide_empty' => false ] );
+        if ( is_wp_error( $directories ) || empty( $directories ) ) {
+            return $options;
+        }
+
+        foreach ( $directories as $directory ) {
+            $options[] = [
+                'label' => $directory->name,
+                'value' => (int) $directory->term_id,
+            ];
+        }
+
+        return $options;
     }
 
     private function resolve_legacy_template_type( \WP_Post $post, string $template_kind ): string {
