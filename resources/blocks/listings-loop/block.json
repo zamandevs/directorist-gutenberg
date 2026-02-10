@@ -1,0 +1,60 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "directorist-gutenberg/listings-loop",
+	"version": "0.1.0",
+	"title": "Listings Loop",
+	"description": "Loop container for listings composition in pages and templates.",
+	"category": "directorist-listings-archive",
+	"attributes": {
+		"directory_type_id": {
+			"description": "The directory type ID for manual listing loop context.",
+			"type": "number",
+			"default": 0
+		},
+		"context_mode": {
+			"description": "Context mode for this loop. Inferred uses query context, manual uses selected directory.",
+			"type": "string",
+			"default": "manual"
+		},
+		"instance_id": {
+			"description": "Unique per-loop instance id used for isolated frontend interactions.",
+			"type": "string",
+			"default": ""
+		},
+		"listings_columns": {
+			"description": "The number of columns to display listings in.",
+			"type": "number",
+			"default": 2
+		},
+		"listings_per_page": {
+			"description": "The number of listings to display per page.",
+			"type": "number",
+			"default": 6
+		},
+		"pagination_type": {
+			"description": "Pagination type: numbered or infinite_scroll.",
+			"type": "string",
+			"default": "numbered"
+		},
+		"default_view": {
+			"description": "Default loop view: grid, list, or map.",
+			"type": "string",
+			"default": "grid"
+		},
+		"block_width": {
+			"description": "Block width percentage.",
+			"type": "string",
+			"default": "100"
+		}
+	},
+	"supports": {
+		"html": false
+	},
+	"textdomain": "directorist-gutenberg",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php",
+	"viewScript": "file:./view.js"
+}
