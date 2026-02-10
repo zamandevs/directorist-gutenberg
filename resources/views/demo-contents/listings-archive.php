@@ -1,16 +1,16 @@
 <!-- wp:group {"align":"full","layout":{"type":"constrained"}} -->
 <div class="wp-block-group alignfull"><!-- wp:group {"align":"wide","layout":{"type":"default"}} -->
     <div class="wp-block-group alignwide"><!-- wp:group -->
-        <div class="wp-block-group"><!-- wp:directorist-gutenberg/listings-archive-search /-->
+        <div class="wp-block-group"><!-- wp:directorist-gutenberg/listings-search /-->
 
-            <!-- wp:directorist-gutenberg/listings-archive-header /-->
+            <!-- wp:directorist-gutenberg/listings-header /-->
         </div>
         <!-- /wp:group -->
 
         <!-- wp:columns {"align":"wide"} -->
         <div class="wp-block-columns alignwide"><!-- wp:column {"width":"33%"} -->
             <div class="wp-block-column" style="flex-basis:33%">
-                <!-- wp:directorist-gutenberg/listings-archive-filters {"filters_text":"Listings Filters"} /-->
+                <!-- wp:directorist-gutenberg/listings-filters {"filters_text":"Listings Filters"} /-->
             </div>
             <!-- /wp:column -->
 

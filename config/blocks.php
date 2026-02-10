@@ -10,6 +10,21 @@ return apply_filters( 'directorist_gutenberg_template_blocks', [
         'field_type' => 'listings-archive',
         'types'      => ['listings-archive'],
     ],
+    'directorist-gutenberg/listings-header' => [
+        'dir'        => $blocks_dir,
+        'field_type' => 'listings-header',
+        'types'      => ['listings-archive'],
+    ],
+    'directorist-gutenberg/listings-search' => [
+        'dir'        => $blocks_dir,
+        'field_type' => 'listings-search',
+        'types'      => ['listings-archive'],
+    ],
+    'directorist-gutenberg/listings-filters' => [
+        'dir'        => $blocks_dir,
+        'field_type' => 'listings-filters',
+        'types'      => ['listings-archive'],
+    ],
     'directorist-gutenberg/listings-archive-header' => [
         'dir'        => $blocks_dir,
         'field_type' => 'listings-archive-header',

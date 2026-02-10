@@ -1,0 +1,283 @@
+/**
+ * The following styles get applied both on the front of your site
+ * and in the editor.
+ *
+ * Replace them with your own styles or remove the file completely.
+ */
+.directorist-gutenberg-listings-archive-filters{
+	// display: inline-flex;
+	// flex: 1;
+	// height: 100%;
+	// max-width: 350px;
+	form {
+		width: 100%;
+	}
+	.directorist-advanced-filter__close {
+		display: none;
+	}
+
+	// @media screen and (max-width: 1199px) {
+	// 	max-width: 300px;
+	// 	min-width: 300px;
+	// }
+
+	@media only screen and (max-width: 991px) {
+		// position: fixed;
+		// left: -360px;
+		// top: 0;
+		// height: 100svh;
+		// background-color: white;
+		// z-index: 9999;
+		// overflow: auto;
+		// box-shadow: 0 10px 15px
+		// 	rgba(var(--directorist-color-dark-rgb), 0.15);
+		// visibility: hidden;
+		// opacity: 0;
+		// transition: 0.3s ease;
+
+		.directorist-search-form__box-wrap {
+			padding-bottom: 30px;
+		}
+		.directorist-advanced-filter__close {
+			display: flex;
+			width: 40px;
+			height: 40px;
+			border-radius: 100%;
+			background-color: var(--directorist-color-light);
+		}
+	}
+
+	@media only screen and (max-width: 575px) {
+		.directorist-search-field .directorist-price-ranges {
+			margin-top: 15px;
+		}
+	}
+
+	// @include m(open) {
+	// 	left: 0;
+	// 	visibility: visible;
+	// 	opacity: 1;
+	// }
+
+	.directorist-form-group label {
+		font-size: 15px;
+		font-weight: 500;
+		color: var(--directorist-color-dark);
+	}
+	.directorist-search-contents {
+		padding: 0;
+	}
+	.directorist-search-basic-dropdown-content {
+		display: block !important;
+	}
+	.directorist-search-form__box {
+		padding: 0;
+		@media only screen and (max-width: 991px) {
+			display: block;
+			height: 100svh;
+			box-shadow: none;
+			border: none;
+			.directorist-advanced-filter__advanced {
+				display: block;
+			}
+		}
+	}
+	.directorist-search-field__input {
+		&.directorist-form-element {
+			&:not([type="number"]) {
+				padding-right: 20px;
+			}
+		}
+	}
+	.directorist-advanced-filter__top {
+		width: 100%;
+		padding: 25px 30px 20px;
+		border-bottom: 1px solid var(--directorist-color-light);
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		box-sizing: border-box;
+	}
+	.directorist-advanced-filter__title {
+		margin: 0;
+		font-size: 20px;
+		font-weight: 500;
+		color: var(--directorist-color-dark);
+	}
+	.directorist-advanced-filter__advanced {
+		flex: 1;
+		box-sizing: border-box;
+		padding: 25px 30px 0;
+	}
+	.directorist-advanced-filter__advanced__element
+		.directorist-search-field {
+		> label {
+			font-size: 16px;
+			font-weight: 500;
+			margin: 0;
+		}
+		&.directorist-search-field-radius_search,
+		&.directorist-search-field-price_range,
+		&.directorist-search-field-text_range {
+			> label {
+				position: unset;
+				margin-bottom: 15px;
+				color: var(--directorist-color-body);
+			}
+		}
+		&.directorist-search-field__number {
+			> label {
+				position: unset;
+			}
+		}
+		.directorist-search-tags,
+		.directorist-search-review,
+		.directorist-radio-wrapper,
+		.directorist-checkbox-wrapper {
+			margin-top: 13px;
+			@media only screen and (max-width: 575px) {
+				margin-top: 5px;
+			}
+		}
+	}
+	.directorist-form-group:last-child .directorist-search-field {
+		margin-bottom: 0;
+	}
+	.directorist-advanced-filter__action {
+		width: 100%;
+		flex-direction: column;
+		align-items: flex-start;
+		padding: 25px 30px 30px;
+		border-top: 1px solid var(--directorist-color-light);
+		box-sizing: border-box;
+		&.directorist-advanced-filter__action--ajax {
+			padding: 0;
+			border: none;
+			text-align: end;
+			margin: -20px 0 20px;
+			z-index: 1;
+			.directorist-btn-reset-ajax {
+				padding: 0;
+				color: var(--directorist-color-info);
+				background: transparent;
+				width: auto;
+				height: auto;
+				line-height: normal;
+				font-size: 14px;
+			}
+			&.reset-btn-disabled {
+				display: none;
+			}
+		}
+	}
+	.directorist-search-modal__contents__footer {
+		position: relative;
+		background-color: transparent;
+	}
+	.directorist-btn-reset-js {
+		width: 100%;
+		height: 50px;
+		line-height: 50px;
+		padding: 0 32px;
+		border: none;
+		border-radius: 8px;
+		text-align: center;
+		text-transform: none;
+		text-decoration: none;
+		cursor: pointer;
+		background-color: var(--directorist-color-light);
+		&:disabled {
+			opacity: 0.5;
+			cursor: not-allowed;
+		}
+	}
+	.directorist-btn-submit {
+		width: 100%;
+	}
+	.directorist-price-ranges__price-frequency__btn .directorist-pf-range {
+		width: 54px;
+		@media screen and (max-width: 575px) {
+			width: 100%;
+		}
+	}
+	.directorist-price-ranges__price-frequency__btn:last-child {
+		border: 0 none;
+	}
+	.directorist-checkbox-wrapper,
+	.directorist-radio-wrapper,
+	.directorist-search-tags {
+		flex-direction: column;
+	}
+
+	&.right-sidebar-contents {
+		order: 2;
+	}
+
+	.directorist-form-group {
+		&.directorist-search-field {
+			.directorist-search-field__label {
+				font-size: 14px;
+				font-weight: 400;
+				color: var(--directorist-color-body);
+				&.directorist-search-basic-dropdown-label {
+					position: unset;
+					transform: unset;
+					font-size: 16px;
+					font-weight: 500;
+					i,
+					span {
+						display: none;
+					}
+				}
+			}
+			.directorist-search-field__input::placeholder {
+				opacity: 0;
+				transition: opacity 0.3s ease;
+			}
+			&.input-is-focused {
+				width: 100%;
+				display: inline-flex;
+				margin-top: 40px;
+				.directorist-search-field__label {
+					top: -35px;
+					transform: unset;
+					font-size: 16px;
+					font-weight: 500;
+					margin: 0 0 10px;
+					z-index: 1;
+				}
+				.directorist-search-field__input {
+					bottom: 0;
+					width: 100%;
+					&::placeholder {
+						opacity: 1;
+					}
+				}
+				&.input-has-noLabel {
+					margin-top: 0;
+				}
+			}
+		}
+		&.directorist-icon-right .directorist-input-icon {
+			right: 0;
+		}
+		&.directorist-icon-left .directorist-input-icon {
+			left: 0;
+		}
+	}
+
+	.directorist-color-picker-wrap {
+		.wp-picker-container {
+			.wp-picker-input-wrap {
+				margin-bottom: 0;
+				.wp-picker-clear {
+					margin: 0;
+					width: 100px;
+				}
+			}
+			.wp-picker-holder {
+				margin-top: 10px;
+			}
+		}
+	}
+}

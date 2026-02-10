@@ -1,0 +1,22 @@
+.directorist-gutenberg-listings-archive-header{
+    margin-bottom: 0;
+    .directorist-listings-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 15px;
+        width: 100%;
+    }
+    .directorist-listings-header__right{
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        .directorist-viewas{
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+    }
+}

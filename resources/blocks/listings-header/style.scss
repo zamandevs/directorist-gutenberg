@@ -1,0 +1,71 @@
+/**
+ * The following styles get applied both on the front of your site
+ * and in the editor.
+ *
+ * Replace them with your own styles or remove the file completely.
+ */
+.directorist-gutenberg-listings-archive-header{
+	// flex: 0 0 100%;
+	.directorist-header-bar {
+		margin: 0;
+	}
+	.directorist-container-fluid {
+		padding: 0;
+	}
+	.directorist-archive-sidebar-toggle {
+		width: auto;
+		padding: 0 20px;
+		font-size: 14px;
+		font-weight: 400;
+		min-height: 40px;
+		padding: 0 20px;
+		border-radius: 8px;
+		text-transform: capitalize;
+		text-decoration: none !important;
+		color: var(--directorist-color-primary);
+		background-color: var(--directorist-color-light);
+		border: 2px solid var(--directorist-color-white);
+		cursor: pointer;
+		display: none;
+		.directorist-icon-mask {
+			margin-right: 5px;
+			&::after {
+				background-color: currentColor;
+				width: 14px;
+				height: 14px;
+			}
+		}
+		@media only screen and (max-width: 991px) {
+			display: inline-flex;
+			align-items: center;
+		}
+		// @include m("active") {
+		// 	color: var(--directorist-color-white);
+		// 	background-color: var(--directorist-color-primary);
+		// 	.directorist-icon-mask::after {
+		// 		background-color: var(--directorist-color-white);
+		// 	}
+		// }
+	}
+
+	.directorist-dropdown.directorist-sortby-dropdown,
+	.directorist-viewas__item{
+		border: 0 none;
+		outline: 0;
+	}
+	.directorist-listings-header{
+		.directorist-header-found-title{
+			color: inherit !important;
+		}
+	}
+	.directorist-listings-header__right{
+		flex: 1;
+		justify-content: flex-end;
+	}
+}
+.directorist-gutenberg-listings-archive-contents,
+.directorist-gutenberg-listings-archive{
+	.directorist-container-fluid{
+		padding: 0;
+	}
+}
