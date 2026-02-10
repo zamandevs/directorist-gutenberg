@@ -18,12 +18,14 @@ export default function BlockServerRender( {
 	block,
 	attributes = {},
 	className = '',
+	urlQueryArgs = {},
 } ) {
 	return (
 		<div className={ className } style={ { pointerEvents: 'none' } }>
 			<ServerSideRender
 				block={ block }
 				attributes={ attributes }
+				urlQueryArgs={ urlQueryArgs }
 				httpMethod="POST"
 				LoadingResponsePlaceholder={ LoadingResponsePlaceholder }
 			/>

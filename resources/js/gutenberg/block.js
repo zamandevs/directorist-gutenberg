@@ -2,12 +2,15 @@
  * WordPress dependencies
  */
 import { useBlockProps } from '@wordpress/block-editor';
+import { useEffect } from '@wordpress/element';
 import clsx from 'clsx';
 
 /**
  * Internal dependencies
  */
 import Controls from './components/controls';
+import BlockServerRender from './components/block-server-render';
+import useResolvedDirectoryTypeId from './hooks/useResolvedDirectoryTypeId';
 
 /**
  * Set custom class names to the block
@@ -52,6 +55,37 @@ export default function Block( {
 	// Priority: fields > ControlsComponent
 	const controlsToUse = fields || ControlsComponent;
 	const customClasses = setCustomClassNames( classNames );
+
+	const isListingCardFieldBlock =
+		name?.startsWith( 'directorist-gutenberg/listing-card-' ) &&
+		name !== 'directorist-gutenberg/listing-card-template' &&
+		name !== 'directorist-gutenberg/listing-card-thumbnail';
+	const resolvedDirectoryTypeId = useResolvedDirectoryTypeId( clientId );
+	const shouldUseServerRenderedFieldPreview =
+		isListingCardFieldBlock && ! attributes?.is_preview;
+
+	useEffect( () => {
+		if (
+			! shouldUseServerRenderedFieldPreview ||
+			! resolvedDirectoryTypeId ||
+			attributes?.directory_type_id === undefined
+		) {
+			return;
+		}
+
+		const currentDirectoryTypeId =
+			parseInt( attributes.directory_type_id, 10 ) || 0;
+		if ( currentDirectoryTypeId === resolvedDirectoryTypeId ) {
+			return;
+		}
+
+		setAttributes( { directory_type_id: resolvedDirectoryTypeId } );
+	}, [
+		attributes?.directory_type_id,
+		resolvedDirectoryTypeId,
+		setAttributes,
+		shouldUseServerRenderedFieldPreview,
+	] );
 
 	// For thumbnail block, don't use useBlockProps on outer wrapper (Edit component handles it)
 	const isThumbnailBlock =
@@ -130,13 +164,36 @@ export default function Block( {
 					setAttributes={ setAttributes }
 				/>
 			) }
-			<Edit
-				attributes={ attributes }
-				setAttributes={ setAttributes }
-				name={ name }
-				clientId={ clientId }
-				{ ...rest }
-			/>
+			{ shouldUseServerRenderedFieldPreview ? (
+				<>
+					<div style={ { display: 'none' } }>
+						<Edit
+							attributes={ attributes }
+							setAttributes={ setAttributes }
+							name={ name }
+							clientId={ clientId }
+							{ ...rest }
+						/>
+					</div>
+					<BlockServerRender
+						block={ name }
+						attributes={ attributes }
+						urlQueryArgs={
+							resolvedDirectoryTypeId
+								? { directory_type: resolvedDirectoryTypeId }
+								: {}
+						}
+					/>
+				</>
+			) : (
+				<Edit
+					attributes={ attributes }
+					setAttributes={ setAttributes }
+					name={ name }
+					clientId={ clientId }
+					{ ...rest }
+				/>
+			) }
 		</div>
 	);
 }
